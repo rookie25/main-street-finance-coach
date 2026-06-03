@@ -23,6 +23,17 @@ import EALogin from "./pages/ea/EALogin";
 import EAHome from "./pages/ea/EAHome";
 import EAClient from "./pages/ea/EAClient";
 
+// Client Portal (Component 4) — standalone, auth-gated, mobile-first.
+import { ClientAuthProvider } from "@/hooks/useClientAuth";
+import RequireClientAuth from "@/components/client/RequireClientAuth";
+import ClientLayout from "@/components/layout/ClientLayout";
+import AppLogin from "./pages/app/AppLogin";
+import AppDashboard from "./pages/app/AppDashboard";
+import AppExpenses from "./pages/app/AppExpenses";
+import AppReports from "./pages/app/AppReports";
+import AppTax from "./pages/app/AppTax";
+import AppChat from "./pages/app/AppChat";
+
 const queryClient = new QueryClient();
 
 // Provides the EA auth context to every /ea route (login + guarded) via Outlet.
@@ -30,6 +41,13 @@ const EAAuthGate = () => (
   <EAAuthProvider>
     <Outlet />
   </EAAuthProvider>
+);
+
+// Provides the client auth context to every /app route via Outlet.
+const ClientAuthGate = () => (
+  <ClientAuthProvider>
+    <Outlet />
+  </ClientAuthProvider>
 );
 
 const App = () => (
@@ -57,6 +75,20 @@ const App = () => (
               <Route element={<EALayout />}>
                 <Route path="/ea" element={<EAHome />} />
                 <Route path="/ea/clients/:schema" element={<EAClient />} />
+              </Route>
+            </Route>
+          </Route>
+
+          {/* Client Portal — auth context wraps login + protected routes. */}
+          <Route element={<ClientAuthGate />}>
+            <Route path="/app/login" element={<AppLogin />} />
+            <Route element={<RequireClientAuth />}>
+              <Route element={<ClientLayout />}>
+                <Route path="/app"          element={<AppDashboard />} />
+                <Route path="/app/expenses" element={<AppExpenses />} />
+                <Route path="/app/reports"  element={<AppReports />} />
+                <Route path="/app/tax"      element={<AppTax />} />
+                <Route path="/app/chat"     element={<AppChat />} />
               </Route>
             </Route>
           </Route>

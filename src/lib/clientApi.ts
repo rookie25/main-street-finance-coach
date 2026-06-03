@@ -1,0 +1,182 @@
+// Client Portal backend API (Component 4) — financial READ side.
+// Every request carries the client's Supabase access token as a Bearer header.
+// The backend validates it and confirms client_users membership.
+//
+// Expense override WRITES do NOT go here — see clientData.ts which talks to
+// Supabase directly under RLS (is_client_schema()).
+import { supabase } from "@/lib/supabase";
+
+const BASE = (import.meta.env.VITE_RAILWAY_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+
+// ── Shared types ─────────────────────────────────────────────────────────────
+
+export interface ClientProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  client_schema: string;
+}
+
+export interface PnlSummary {
+  total_revenue:  number;
+  sales_tax:      number;
+  net_revenue:    number;
+  total_cogs:     number;
+  total_opex:     number;
+  total_expenses: number;
+  net_income:     number;
+}
+
+export interface CashBalance {
+  account_name: string;
+  amount:       number;
+  as_of_date:   string;
+}
+
+export interface TopExpense {
+  id:       string;
+  vendor:   string;
+  amount:   number;
+  category: string;
+  date:     string;
+}
+
+export interface DashboardAlert {
+  type:     string;
+  severity: "warning" | "info";
+  message:  string;
+}
+
+export interface Briefing {
+  title:      string | null;
+  body:       string;
+  created_at: string;
+}
+
+export interface DashboardData {
+  month:         string;
+  pnl:           PnlSummary;
+  cash_balances: CashBalance[];
+  top_expenses:  TopExpense[];
+  alerts:        DashboardAlert[];
+  briefing:      Briefing | null;
+}
+
+export interface ExpenseItem {
+  id:                string;
+  vendor:            string;
+  vendor_original:   string;
+  amount:            number;
+  category:          string;
+  category_original: string;
+  date:              string;
+  date_original:     string;
+  expense_type:      string;
+  source:            string;
+  has_override:      boolean;
+}
+
+export interface ExpensesData {
+  month:    string;
+  expenses: ExpenseItem[];
+  total:    number;
+}
+
+export interface ReportLinks {
+  month:                  string;
+  available_months:       string[];
+  pnl_pdf_url:            string | null;
+  balance_sheet_pdf_url:  string | null;
+  expires_in:             number | null;
+}
+
+export interface TaxDeadline {
+  quarter:    string;
+  due_date:   string;
+  days_until: number;
+}
+
+export interface TaxEntry {
+  month:         string;
+  tax_collected: number;
+}
+
+export interface TaxData {
+  upcoming_deadlines:    TaxDeadline[];
+  monthly_history:       TaxEntry[];
+  most_recent_payable:   { month: string; amount: number } | null;
+}
+
+export interface ChatResponse {
+  reply: string;
+  model: string;
+}
+
+// ── Error class ───────────────────────────────────────────────────────────────
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+// ── HTTP helpers ──────────────────────────────────────────────────────────────
+
+async function authHeader(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function get<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { headers: await authHeader() });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* non-JSON */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function post<T>(path: string, payload: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method:  "POST",
+    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body:    JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* non-JSON */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<T>;
+}
+
+// ── Endpoints ─────────────────────────────────────────────────────────────────
+
+export const getMe = () =>
+  get<ClientProfile>("/client/me");
+
+export const getDashboard = (month?: string) =>
+  get<DashboardData>(`/client/dashboard${month ? `?month=${encodeURIComponent(month)}` : ""}`);
+
+export const getExpenses = (month?: string) =>
+  get<ExpensesData>(`/client/expenses${month ? `?month=${encodeURIComponent(month)}` : ""}`);
+
+export const getReports = (month?: string) =>
+  get<ReportLinks>(`/client/reports${month ? `?month=${encodeURIComponent(month)}` : ""}`);
+
+export const getTax = () =>
+  get<TaxData>("/client/tax");
+
+export const sendChat = (
+  messages: { role: "user" | "assistant"; content: string }[],
+  month?: string,
+) =>
+  post<ChatResponse>("/client/chat", { messages, month });
+
+// Append &download= to a signed URL so the browser prompts a file download.
+export const asDownloadUrl = (signedUrl: string, filename: string) =>
+  `${signedUrl}&download=${encodeURIComponent(filename)}`;
