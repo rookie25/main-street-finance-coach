@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
-import { Mail, Clock, CheckCircle2 } from "lucide-react";
+import { Mail, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import Reveal from "@/components/Reveal";
+import { supabase } from "@/lib/supabase";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Required").max(100),
@@ -24,14 +25,17 @@ const schema = z.object({
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [cpa, setCpa] = useState(false);
   const [type, setType] = useState("");
   const [revenue, setRevenue] = useState("");
   const [spend, setSpend] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting) return;
+
     const fd = new FormData(e.currentTarget);
     const data = {
       name: String(fd.get("name") || ""),
@@ -48,6 +52,27 @@ export default function Contact() {
       return;
     }
     setErrors({});
+    setSubmitting(true);
+
+    const { error } = await supabase.from("leads").insert({
+      name: parsed.data.name,
+      business_name: parsed.data.business,
+      business_type: parsed.data.type,
+      monthly_revenue: parsed.data.revenue,
+      bookkeeping_spend: parsed.data.spend,
+      is_cpa_partner: parsed.data.cpa,
+      message: parsed.data.message || null,
+      status: "new",
+    });
+
+    setSubmitting(false);
+
+    if (error) {
+      console.error("[contact] lead insert failed:", error);
+      toast.error("Something went wrong. Please try again or email us directly.");
+      return;
+    }
+
     setSubmitted(true);
     toast.success("Thanks — we'll be in touch within 1 business day.");
   }
@@ -87,13 +112,13 @@ export default function Contact() {
                 className="bg-card border border-border rounded-3xl p-8 md:p-10 shadow-card space-y-6"
               >
                 <Field label="Your name" error={errors.name}>
-                  <Input name="name" placeholder="Jane Doe" maxLength={100} required />
+                  <Input name="name" placeholder="Jane Doe" maxLength={100} required disabled={submitting} />
                 </Field>
                 <Field label="Business name" error={errors.business}>
-                  <Input name="business" placeholder="Main Street Coffee Co." maxLength={120} required />
+                  <Input name="business" placeholder="Main Street Coffee Co." maxLength={120} required disabled={submitting} />
                 </Field>
                 <Field label="Business type" error={errors.type}>
-                  <Select value={type} onValueChange={setType}>
+                  <Select value={type} onValueChange={setType} disabled={submitting}>
                     <SelectTrigger><SelectValue placeholder="Select one" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="restaurant">Restaurant / Cafe</SelectItem>
@@ -104,7 +129,7 @@ export default function Contact() {
                   </Select>
                 </Field>
                 <Field label="Monthly revenue range" error={errors.revenue}>
-                  <Select value={revenue} onValueChange={setRevenue}>
+                  <Select value={revenue} onValueChange={setRevenue} disabled={submitting}>
                     <SelectTrigger><SelectValue placeholder="Select one" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="<10">Under $10K</SelectItem>
@@ -115,7 +140,7 @@ export default function Contact() {
                   </Select>
                 </Field>
                 <Field label="Current bookkeeping spend" error={errors.spend}>
-                  <Select value={spend} onValueChange={setSpend}>
+                  <Select value={spend} onValueChange={setSpend} disabled={submitting}>
                     <SelectTrigger><SelectValue placeholder="Select one" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="<200">Under $200</SelectItem>
@@ -131,15 +156,22 @@ export default function Contact() {
                     <div className="font-medium">Are you a CPA looking to partner?</div>
                     <div className="text-sm text-muted-foreground">We'll route you to our partnerships team.</div>
                   </div>
-                  <Switch checked={cpa} onCheckedChange={setCpa} />
+                  <Switch checked={cpa} onCheckedChange={setCpa} disabled={submitting} />
                 </div>
 
                 <Field label="Message (optional)">
-                  <Textarea name="message" rows={4} maxLength={1000} placeholder="Anything we should know?" />
+                  <Textarea name="message" rows={4} maxLength={1000} placeholder="Anything we should know?" disabled={submitting} />
                 </Field>
 
-                <Button type="submit" variant="brand" size="xl" className="w-full">
-                  Request Free Assessment
+                <Button type="submit" variant="brand" size="xl" className="w-full" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Submitting…
+                    </>
+                  ) : (
+                    "Request Free Assessment"
+                  )}
                 </Button>
               </form>
             </Reveal>
