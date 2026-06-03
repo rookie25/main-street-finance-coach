@@ -10,10 +10,11 @@ import { supabase } from "@/lib/supabase";
 const BASE = (import.meta.env.VITE_RAILWAY_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 
 export interface EAClient {
-  client_schema: string;
-  business_name: string;
+  client_schema:     string;
+  business_name:     string;
   onboarding_status: string | null;
-  status: "active" | "pending";
+  status:            "active" | "pending";
+  pending_count:     number;
 }
 
 export interface EAMonths {
@@ -77,3 +78,61 @@ export const getClientPnl = (schema: string, month: string) =>
 // content-disposition attachment without invalidating the signature.
 export const asDownloadUrl = (signedUrl: string, filename: string) =>
   `${signedUrl}&download=${encodeURIComponent(filename)}`;
+
+// ── Pending adjustments ───────────────────────────────────────────────────────
+
+export interface PendingExpense {
+  id:       string;
+  vendor:   string;
+  amount:   number;
+  date:     string;
+  category: string | null;
+}
+
+export interface PendingAdjustment {
+  id:           string;
+  client_schema: string;
+  expense_id:   string;
+  request_type: "amount_change" | "delete";
+  old_value:    { vendor: string; amount: number; date: string; category: string | null } | null;
+  new_value:    { amount: number } | null;
+  client_note:  string | null;
+  status:       "pending" | "approved" | "rejected";
+  submitted_at: string;
+  expense:      PendingExpense | null;
+}
+
+export interface PendingAdjustmentsData {
+  client_schema: string;
+  adjustments:   PendingAdjustment[];
+  total:         number;
+}
+
+export const getPendingAdjustments = (schema: string) =>
+  get<PendingAdjustmentsData>(`/ea/pending-adjustments/${encodeURIComponent(schema)}`);
+
+export const approveAdjustment = (adjId: string, amount?: number) =>
+  post<{ approved: boolean; adj_id: string; request_type: string }>(
+    `/ea/pending-adjustments/${encodeURIComponent(adjId)}/approve`,
+    amount !== undefined ? { amount } : {},
+  );
+
+export const rejectAdjustment = (adjId: string) =>
+  post<{ rejected: boolean; adj_id: string }>(
+    `/ea/pending-adjustments/${encodeURIComponent(adjId)}/reject`,
+    {},
+  );
+
+async function post<T>(path: string, payload: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method:  "POST",
+    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body:    JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<T>;
+}

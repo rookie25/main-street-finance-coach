@@ -180,3 +180,89 @@ export const sendChat = (
 // Append &download= to a signed URL so the browser prompts a file download.
 export const asDownloadUrl = (signedUrl: string, filename: string) =>
   `${signedUrl}&download=${encodeURIComponent(filename)}`;
+
+// ── Receipt upload / confirm ──────────────────────────────────────────────────
+
+export interface ReceiptUploadResult {
+  raw_id:           string | null;
+  vendor:           string | null;
+  amount:           number | null;
+  date:             string | null;
+  category:         string | null;
+  confidence:       "high" | "medium" | "low";
+  confidence_score: number;
+  receipt_url:      string;
+  notes:            string | null;
+}
+
+export interface ReceiptConfirmPayload {
+  raw_id:    string | null;
+  vendor:    string;
+  amount:    number;
+  date:      string;
+  category:  string | null;
+  notes?:    string | null;
+}
+
+export interface ReceiptConfirmResult {
+  expense_id:  string;
+  vendor:      string;
+  amount:      number;
+  date:        string;
+  category:    string | null;
+  receipt_url: string | null;
+}
+
+export async function uploadReceipt(file: File): Promise<ReceiptUploadResult> {
+  const { data } = await supabase.auth.getSession();
+  const token    = data.session?.access_token;
+  const form     = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/client/upload-receipt`, {
+    method:  "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body:    form,
+  });
+  if (!res.ok) {
+    let detail = `Upload failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<ReceiptUploadResult>;
+}
+
+export const confirmReceipt = (payload: ReceiptConfirmPayload) =>
+  post<ReceiptConfirmResult>("/client/confirm-receipt", payload);
+
+// ── Expense edits / correction requests ──────────────────────────────────────
+
+export interface PatchExpensePayload {
+  vendor?:   string;
+  date?:     string;
+  category?: string;
+  notes?:    string;
+}
+
+export async function patchExpense(expenseId: string, payload: PatchExpensePayload) {
+  const res = await fetch(`${BASE}/client/expense/${encodeURIComponent(expenseId)}`, {
+    method:  "PATCH",
+    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body:    JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let detail = `Update failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<{ updated: boolean; expense_id: string }>;
+}
+
+export interface CorrectionRequestPayload {
+  expense_id:     string;
+  request_type:   "amount_change" | "delete";
+  correct_amount?: number;
+  client_note?:   string;
+}
+
+export const requestCorrection = (payload: CorrectionRequestPayload) =>
+  post<{ submitted: boolean; request_type: string }>("/client/expense/request-correction", payload);

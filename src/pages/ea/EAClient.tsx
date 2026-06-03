@@ -7,11 +7,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, Check, Download, FileText, Flag, Loader2, Trash2, Undo2,
+  AlertTriangle, Check, CheckCircle2, Download, FileText, Flag,
+  Loader2, Trash2, Undo2, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { getClientMonths, getClientPnl, listClients, asDownloadUrl } from "@/lib/eaApi";
+import {
+  getClientMonths, getClientPnl, listClients, asDownloadUrl,
+  getPendingAdjustments, approveAdjustment, rejectAdjustment,
+  type PendingAdjustment,
+} from "@/lib/eaApi";
 import {
   addFlag, approveMonth, deleteOverride, getApproval, getFlags, getNote, getOverrides,
   saveNote, setFlagResolved, setOverride, unapproveMonth, EXPENSE_CATEGORIES,
@@ -97,6 +102,7 @@ export default function EAClient() {
         <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-6">
           <ReportViewer schema={schema} month={month} />
           <div className="space-y-6">
+            <PendingAdjustmentsCard schema={schema} qc={qc} />
             <ApprovalCard schema={schema} month={month} qc={qc} />
             <NotesCard schema={schema} month={month} qc={qc} />
             <FlagsCard schema={schema} month={month} qc={qc} />
@@ -178,6 +184,141 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
     </Card>
   );
 }
+
+// --------------------------------------------------------------------------- //
+// Pending Adjustments — client correction requests awaiting EA review
+// --------------------------------------------------------------------------- //
+function PendingAdjustmentsCard({ schema, qc }: { schema: string; qc: ReturnType<typeof useQueryClient> }) {
+  const key = ["ea", "pending", schema];
+  const pendingQ = useQuery({
+    queryKey: key,
+    queryFn:  () => getPendingAdjustments(schema),
+    enabled:  !!schema,
+  });
+
+  const [editAmount, setEditAmount] = useState<Record<string, string>>({});
+
+  const approve = useMutation({
+    mutationFn: ({ id, amount }: { id: string; amount?: number }) => approveAdjustment(id, amount),
+    onSuccess: (_, vars) => {
+      toast.success("Approved and applied.");
+      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ["ea", "clients"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Approval failed."),
+  });
+
+  const reject = useMutation({
+    mutationFn: (id: string) => rejectAdjustment(id),
+    onSuccess: () => {
+      toast.success("Request rejected.");
+      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ["ea", "clients"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Rejection failed."),
+  });
+
+  const adjustments = pendingQ.data?.adjustments ?? [];
+  if (!pendingQ.isLoading && adjustments.length === 0) return null;
+
+  function fmtAmt(n: number | null | undefined) {
+    if (n == null) return "—";
+    return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  }
+
+  return (
+    <Card className="border-accent/40">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+            {pendingQ.isLoading ? "…" : adjustments.length}
+          </span>
+          Pending Reviews
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {pendingQ.isLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        )}
+        {adjustments.map((adj) => {
+          const isAmountChange = adj.request_type === "amount_change";
+          const vendor   = adj.expense?.vendor ?? adj.old_value?.vendor ?? "Unknown";
+          const oldAmt   = adj.expense?.amount ?? adj.old_value?.amount;
+          const newAmt   = adj.new_value?.amount;
+          const pending  = approve.isPending || reject.isPending;
+          const editAmt  = editAmount[adj.id] ?? (newAmt != null ? String(newAmt) : "");
+
+          return (
+            <div key={adj.id} className="rounded-xl border border-border p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-sm">
+                  <div className="font-medium">{vendor}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {isAmountChange
+                      ? <>{fmtAmt(oldAmt)} → <span className="text-accent font-medium">{fmtAmt(newAmt)}</span></>
+                      : <span className="text-destructive font-medium">Delete request</span>
+                    }
+                    {" · "}{new Date(adj.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </div>
+                  {adj.client_note && (
+                    <div className="text-xs text-muted-foreground mt-1 italic">"{adj.client_note}"</div>
+                  )}
+                </div>
+              </div>
+
+              {/* EA can override the amount before approving */}
+              {isAmountChange && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs whitespace-nowrap text-muted-foreground">Final amount:</Label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={editAmt}
+                    onChange={(e) => setEditAmount((prev) => ({ ...prev, [adj.id]: e.target.value }))}
+                    className="h-7 text-xs"
+                    placeholder={newAmt != null ? String(newAmt) : ""}
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 h-8 text-xs"
+                  disabled={pending}
+                  onClick={() => {
+                    const finalAmt = isAmountChange
+                      ? (editAmt ? parseFloat(editAmt) : newAmt)
+                      : undefined;
+                    approve.mutate({ id: adj.id, amount: finalAmt ?? undefined });
+                  }}
+                >
+                  {approve.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/5"
+                  disabled={pending}
+                  onClick={() => reject.mutate(adj.id)}
+                >
+                  {reject.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
+                  Reject
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 
 // --------------------------------------------------------------------------- //
 // Approval — "<Month> Looks Good ✅"

@@ -82,7 +82,12 @@ export default function EALayout() {
                   }
                 >
                   <StatusDot status={c.status} />
-                  <span className="truncate">{c.business_name}</span>
+                  <span className="truncate flex-1">{c.business_name}</span>
+                  {c.pending_count > 0 && (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[9px] font-bold shrink-0">
+                      {c.pending_count}
+                    </span>
+                  )}
                 </NavLink>
               </li>
             ))}
