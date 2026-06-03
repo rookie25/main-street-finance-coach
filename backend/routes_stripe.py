@@ -20,7 +20,7 @@ import os
 import stripe
 from fastapi import APIRouter, HTTPException, Request
 
-from db import get_db
+from db import sb_select, sb_update
 from emails import send_welcome_email
 
 logger = logging.getLogger("onboarding.stripe")
@@ -54,18 +54,20 @@ async def stripe_webhook(request: Request):
             logger.warning("payment_intent.succeeded without client_schema metadata; ignoring")
             return {"received": True}
 
-        db = get_db()
         client_update = {"onboarding_status": "active", "is_active": True}
         if customer_id:
             client_update["stripe_customer_id"] = customer_id
-        db.table("clients").update(client_update).eq("schema_name", client_schema).execute()
+        sb_update("clients", {"schema_name": client_schema}, client_update)
 
         if token:
-            db.table("onboarding_sessions").update({"status": "completed"}).eq("token", token).execute()
+            sb_update("onboarding_sessions", {"token": token}, {"status": "completed"})
 
         # Look up the email to welcome (never log credentials).
-        res = db.table("clients").select("email, business_name").eq("schema_name", client_schema).limit(1).execute()
-        info = (res.data or [{}])[0]
+        res = sb_select(
+            "clients",
+            {"select": "email,business_name", "schema_name": f"eq.{client_schema}", "limit": "1"},
+        )
+        info = (res or [{}])[0]
         try:
             send_welcome_email(to_email=info.get("email"), business_name=info.get("business_name"))
         except Exception:  # never fail the webhook on email errors

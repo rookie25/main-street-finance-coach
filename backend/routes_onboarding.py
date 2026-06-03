@@ -28,7 +28,7 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
 from crypto_utils import encrypt
-from db import get_db
+from db import sb_insert, sb_select, sb_update
 
 logger = logging.getLogger("onboarding.routes")
 
@@ -52,9 +52,7 @@ def _load_active_session(token: str) -> dict:
 
     Raises 404 if unknown, 410 if expired (and marks it expired).
     """
-    db = get_db()
-    res = db.table("onboarding_sessions").select("*").eq("token", token).limit(1).execute()
-    rows = res.data or []
+    rows = sb_select("onboarding_sessions", {"select": "*", "token": f"eq.{token}", "limit": "1"})
     if not rows:
         raise HTTPException(status_code=404, detail="Invalid onboarding link")
 
@@ -62,7 +60,7 @@ def _load_active_session(token: str) -> dict:
     expires_at = datetime.fromisoformat(session["expires_at"].replace("Z", "+00:00"))
     if datetime.now(timezone.utc) > expires_at:
         if session.get("status") != "expired":
-            db.table("onboarding_sessions").update({"status": "expired"}).eq("token", token).execute()
+            sb_update("onboarding_sessions", {"token": token}, {"status": "expired"})
         raise HTTPException(status_code=410, detail="This onboarding link has expired")
 
     return session
@@ -86,30 +84,26 @@ class CreateLinkResponse(BaseModel):
 @onboarding_router.post("/create-link", response_model=CreateLinkResponse)
 def create_link(body: CreateLinkRequest, x_admin_key: str | None = Header(default=None)):
     _require_admin(x_admin_key)
-    db = get_db()
 
     # Confirm the client exists (natural key = schema_name).
-    client = (
-        db.table("clients").select("schema_name").eq("schema_name", body.client_schema).limit(1).execute()
+    client = sb_select(
+        "clients", {"select": "schema_name", "schema_name": f"eq.{body.client_schema}", "limit": "1"}
     )
-    if not (client.data or []):
+    if not client:
         raise HTTPException(status_code=404, detail=f"Unknown client_schema: {body.client_schema}")
 
     token = secrets.token_urlsafe(32)
-    insert = (
-        db.table("onboarding_sessions")
-        .insert(
-            {
-                "token": token,
-                "client_schema": body.client_schema,
-                "status": "pending",
-                "amount_due": body.amount_due,
-                "currency": body.currency,
-            }
-        )
-        .execute()
+    rows = sb_insert(
+        "onboarding_sessions",
+        {
+            "token": token,
+            "client_schema": body.client_schema,
+            "status": "pending",
+            "amount_due": body.amount_due,
+            "currency": body.currency,
+        },
     )
-    row = insert.data[0]
+    row = rows[0]
     # Amount in the URL is display-only; the authoritative value lives in the DB.
     amount_q = f"?amount={body.amount_due}" if body.amount_due is not None else ""
     return CreateLinkResponse(
@@ -125,15 +119,11 @@ def create_link(body: CreateLinkRequest, x_admin_key: str | None = Header(defaul
 @onboarding_router.get("/session/{token}")
 def get_session(token: str):
     session = _load_active_session(token)
-    db = get_db()
-    client = (
-        db.table("clients")
-        .select("business_name, onboarding_status")
-        .eq("schema_name", session["client_schema"])
-        .limit(1)
-        .execute()
+    client = sb_select(
+        "clients",
+        {"select": "business_name,onboarding_status", "schema_name": f"eq.{session['client_schema']}", "limit": "1"},
     )
-    info = (client.data or [{}])[0]
+    info = (client or [{}])[0]
     # SAFE projection only — never expose client_schema internals or any credential.
     return {
         "status": session["status"],
@@ -166,7 +156,6 @@ class SubmitRequest(BaseModel):
 @onboarding_router.post("/submit")
 def submit(body: SubmitRequest):
     session = _load_active_session(body.token)
-    db = get_db()
 
     # Build the clients update. clients has no phone/address columns, so those are
     # folded into `notes`; map the rest onto real columns. Encrypt all credentials.
@@ -194,8 +183,8 @@ def submit(body: SubmitRequest):
     if body.gmail_token:
         updates["encrypted_gmail_token"] = encrypt(body.gmail_token)
 
-    db.table("clients").update(updates).eq("schema_name", session["client_schema"]).execute()
-    db.table("onboarding_sessions").update({"status": "submitted"}).eq("token", body.token).execute()
+    sb_update("clients", {"schema_name": session["client_schema"]}, updates)
+    sb_update("onboarding_sessions", {"token": body.token}, {"status": "submitted"})
 
     # Log only non-sensitive field NAMES that were provided — never values.
     provided = [k for k in ("square_api_key", "plaid_token", "gmail_token")
