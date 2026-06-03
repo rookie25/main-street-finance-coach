@@ -180,7 +180,7 @@ export default function Contact() {
           <div className="mt-10 grid sm:grid-cols-2 gap-4 text-center">
             <div className="p-5 rounded-xl bg-secondary">
               <Mail className="h-5 w-5 text-accent mx-auto mb-2" />
-              <a href="mailto:hello@desiredlabs.com" className="font-medium hover:text-accent">hello@desiredlabs.com</a>
+              <a href="mailto:hello@desiredlabs.ai" className="font-medium hover:text-accent">hello@desiredlabs.ai</a>
             </div>
             <div className="p-5 rounded-xl bg-secondary">
               <Clock className="h-5 w-5 text-accent mx-auto mb-2" />

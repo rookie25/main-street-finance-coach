@@ -76,7 +76,7 @@ export default function StepIntegrations({
         <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
           <li>Open the <span className="font-medium">Merchant Portal</span> → Financials → Statements.</li>
           <li>Export the payout report as <span className="font-medium">CSV</span>.</li>
-          <li>Email it to <a className="text-accent hover:underline" href="mailto:hello@desiredlabs.com">hello@desiredlabs.com</a> — we'll import it for you.</li>
+          <li>Email it to <a className="text-accent hover:underline" href="mailto:hello@desiredlabs.ai">hello@desiredlabs.ai</a> — we'll import it for you.</li>
         </ol>
       </div>
 

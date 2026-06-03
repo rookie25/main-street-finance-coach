@@ -112,8 +112,8 @@ export default function Onboard() {
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <AlertTriangle className="h-8 w-8 text-destructive" />
           <p className="text-muted-foreground max-w-sm">{load.message}</p>
-          <a href="mailto:hello@desiredlabs.com" className="text-accent hover:underline text-sm">
-            hello@desiredlabs.com
+          <a href="mailto:hello@desiredlabs.ai" className="text-accent hover:underline text-sm">
+            hello@desiredlabs.ai
           </a>
         </div>
       </Shell>

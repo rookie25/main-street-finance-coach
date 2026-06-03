@@ -31,7 +31,7 @@ def send_welcome_email(*, to_email: str | None, business_name: str | None) -> No
     #   import resend
     #   resend.api_key = provider_key
     #   resend.Emails.send({
-    #       "from": "Desired Labs <hello@desiredlabs.com>",
+    #       "from": "Desired Labs <hello@desiredlabs.ai>",
     #       "to": to_email,
     #       "subject": "Welcome to Desired Labs 🎉",
     #       "html": render_welcome(business_name),

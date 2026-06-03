@@ -27,7 +27,7 @@ export default function StepSuccess({ businessName }: { businessName: string | n
         </li>
       </ol>
       <p className="text-sm text-muted-foreground mt-8">
-        Questions? Email <a className="text-accent hover:underline" href="mailto:hello@desiredlabs.com">hello@desiredlabs.com</a>.
+        Questions? Email <a className="text-accent hover:underline" href="mailto:hello@desiredlabs.ai">hello@desiredlabs.ai</a>.
       </p>
     </div>
   );

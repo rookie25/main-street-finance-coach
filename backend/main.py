@@ -24,7 +24,7 @@ app = FastAPI(title="Desired Labs — Onboarding API")
 # Allow the Vite frontend to call the onboarding endpoints in dev.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "https://desiredlabs.com"],
+    allow_origins=["http://localhost:8080", "https://desiredlabs.ai"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
