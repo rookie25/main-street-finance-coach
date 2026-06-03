@@ -1,0 +1,7 @@
+# Add these to the groundstack repo's requirements (versions are floors; pin to match your stack).
+fastapi>=0.110
+uvicorn>=0.29
+pydantic[email]>=2.6
+supabase>=2.4
+cryptography>=42.0
+stripe>=9.0
