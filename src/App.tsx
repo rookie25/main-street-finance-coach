@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Outlet, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -15,7 +15,22 @@ import Contact from "./pages/Contact";
 import Onboard from "./pages/Onboard";
 import NotFound from "./pages/NotFound";
 
+// EA Portal (Component 3) — standalone, auth-gated, separate from SiteLayout.
+import { EAAuthProvider } from "@/hooks/useEAAuth";
+import RequireAuth from "@/components/ea/RequireAuth";
+import EALayout from "@/components/layout/EALayout";
+import EALogin from "./pages/ea/EALogin";
+import EAHome from "./pages/ea/EAHome";
+import EAClient from "./pages/ea/EAClient";
+
 const queryClient = new QueryClient();
+
+// Provides the EA auth context to every /ea route (login + guarded) via Outlet.
+const EAAuthGate = () => (
+  <EAAuthProvider>
+    <Outlet />
+  </EAAuthProvider>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,6 +49,18 @@ const App = () => (
           </Route>
           {/* Onboarding portal — standalone chrome, outside the marketing SiteLayout. */}
           <Route path="/onboard/:token" element={<Onboard />} />
+
+          {/* EA Portal — auth context wraps login + protected routes. */}
+          <Route element={<EAAuthGate />}>
+            <Route path="/ea/login" element={<EALogin />} />
+            <Route element={<RequireAuth />}>
+              <Route element={<EALayout />}>
+                <Route path="/ea" element={<EAHome />} />
+                <Route path="/ea/clients/:schema" element={<EAClient />} />
+              </Route>
+            </Route>
+          </Route>
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

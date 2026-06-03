@@ -13,6 +13,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl ?? "", supabaseAnonKey ?? "", {
   auth: {
-    persistSession: false,
+    // EA Portal (Component 3) relies on a persisted, auto-refreshed session so
+    // Cliff stays logged in across reloads. Onboarding doesn't use Supabase auth,
+    // so enabling this is safe for the rest of the app.
+    persistSession: true,
+    autoRefreshToken: true,
+    // We use email/password sign-in, not magic-link/OAuth redirects, so there's
+    // no auth fragment to parse out of the URL on public marketing routes.
+    detectSessionInUrl: false,
   },
 });
