@@ -362,8 +362,7 @@ export default function AppExpenses() {
                 <Label>Amount ($)</Label>
                 <Input type="number" min="0.01" step="0.01" inputMode="decimal"
                   value={draftAmount} onChange={(e) => setDraftAmount(e.target.value)} />
-                {parseFloat(draftAmount) !== editingExpense.amount &&
-                  Math.abs(parseFloat(draftAmount) - editingExpense.amount) > 500 && (
+                {Math.abs(parseFloat(draftAmount) - editingExpense.amount) > 500 && (
                   <p className="text-xs text-accent flex items-center gap-1">
                     <Info className="h-3 w-3" />
                     Large change — your advisor will be notified
