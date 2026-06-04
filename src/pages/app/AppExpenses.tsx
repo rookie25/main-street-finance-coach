@@ -145,16 +145,52 @@ export default function AppExpenses() {
       date:     draftDate     || undefined,
       category: draftCategory || undefined,
     }),
-    onSuccess: (result) => {
-      if (result.flagged_for_review) {
-        toast.success("Saved — your advisor has been notified to review this change.");
-      } else {
-        toast.success("Changes saved.");
-      }
-      qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
-      setEditingExpense(null);
+
+    // Close the sheet and update the list immediately — before the server responds.
+    onMutate: async () => {
+      const queryKey = ["client", "expenses", month] as const;
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData(queryKey);
+
+      const snapshot = {
+        id:       editingExpense!.id,
+        vendor:   draftVendor   || editingExpense!.vendor,
+        amount:   draftAmount   ? parseFloat(draftAmount) : editingExpense!.amount,
+        date:     draftDate     || editingExpense!.date,
+        category: draftCategory || editingExpense!.category,
+      };
+
+      qc.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          expenses: old.expenses.map((e: ExpenseItem) =>
+            e.id === snapshot.id ? { ...e, ...snapshot } : e
+          ),
+        };
+      });
+
+      setEditingExpense(null);   // close sheet immediately
+      return { previous };
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Save failed."),
+
+    onSuccess: (result) => {
+      toast.success(
+        result.flagged_for_review
+          ? "Saved — your advisor has been notified."
+          : "Saved.",
+      );
+      // Re-fetch to sync any server-side normalisation (category mapping, etc.)
+      qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+    },
+
+    onError: (e, _vars, context) => {
+      // Revert the optimistic update
+      if (context?.previous) {
+        qc.setQueryData(["client", "expenses", month], context.previous);
+      }
+      toast.error(e instanceof Error ? e.message : "Save failed — please try again.");
+    },
   });
 
   // ── delete ──────────────────────────────────────────────────────────────────
@@ -349,8 +385,7 @@ export default function AppExpenses() {
           )}
           <SheetFooter className="mt-6 gap-2 flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setEditingExpense(null)}>Cancel</Button>
-            <Button className="flex-1" disabled={editMutation.isPending} onClick={() => editMutation.mutate()}>
-              {editMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button className="flex-1" onClick={() => editMutation.mutate()}>
               Save
             </Button>
           </SheetFooter>
