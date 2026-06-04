@@ -241,9 +241,17 @@ export interface PatchExpensePayload {
   date?:     string;
   category?: string;
   notes?:    string;
+  amount?:   number;   // freely editable — flagged to EA only for prior-month or >$500 delta
 }
 
-export async function patchExpense(expenseId: string, payload: PatchExpensePayload) {
+export interface PatchExpenseResult {
+  updated:            boolean;
+  expense_id:         string;
+  flagged_for_review: boolean;
+  flag_reasons:       string[];
+}
+
+export async function patchExpense(expenseId: string, payload: PatchExpensePayload): Promise<PatchExpenseResult> {
   const res = await fetch(`${BASE}/client/expense/${encodeURIComponent(expenseId)}`, {
     method:  "PATCH",
     headers: { ...(await authHeader()), "Content-Type": "application/json" },
@@ -254,15 +262,24 @@ export async function patchExpense(expenseId: string, payload: PatchExpensePaylo
     try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
     throw new ApiError(detail, res.status);
   }
-  return res.json() as Promise<{ updated: boolean; expense_id: string }>;
+  return res.json() as Promise<PatchExpenseResult>;
 }
 
-export interface CorrectionRequestPayload {
-  expense_id:     string;
-  request_type:   "amount_change" | "delete";
-  correct_amount?: number;
-  client_note?:   string;
+export interface DeleteExpenseResult {
+  deleted?: boolean;
+  flagged?: boolean;
+  message?: string;
 }
 
-export const requestCorrection = (payload: CorrectionRequestPayload) =>
-  post<{ submitted: boolean; request_type: string }>("/client/expense/request-correction", payload);
+export async function deleteExpense(expenseId: string): Promise<DeleteExpenseResult> {
+  const res = await fetch(`${BASE}/client/expense/${encodeURIComponent(expenseId)}`, {
+    method:  "DELETE",
+    headers: await authHeader(),
+  });
+  if (!res.ok) {
+    let detail = `Delete failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<DeleteExpenseResult>;
+}
