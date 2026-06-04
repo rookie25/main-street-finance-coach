@@ -138,39 +138,45 @@ export default function AppExpenses() {
     setDraftCategory(expense.category ?? "");
   }
 
-  const editMutation = useMutation({
-    mutationFn: () => patchExpense(editingExpense!.id, {
-      vendor:   draftVendor   || undefined,
-      amount:   draftAmount   ? parseFloat(draftAmount) : undefined,
-      date:     draftDate     || undefined,
-      category: draftCategory || undefined,
+  // Variables are captured at call time so mutationFn never closes over
+  // mutable state — prevents the null-dereference that occurs when onMutate
+  // calls setEditingExpense(null) and React Query updates its mutationFn ref
+  // to the new render's closure before mutationFn fires.
+  interface EditVars {
+    id: string;
+    vendor?: string; amount?: number; date?: string; category?: string;
+    // Optimistic snapshot for the cache update
+    _snapshot: { id: string; vendor: string; amount: number; date: string; category: string };
+  }
+
+  const editMutation = useMutation<
+    Awaited<ReturnType<typeof patchExpense>>,
+    Error,
+    EditVars
+  >({
+    mutationFn: (vars) => patchExpense(vars.id, {
+      vendor:   vars.vendor,
+      amount:   vars.amount,
+      date:     vars.date,
+      category: vars.category,
     }),
 
-    // Close the sheet and update the list immediately — before the server responds.
-    onMutate: async () => {
+    onMutate: async (vars) => {
       const queryKey = ["client", "expenses", month] as const;
       await qc.cancelQueries({ queryKey });
       const previous = qc.getQueryData(queryKey);
-
-      const snapshot = {
-        id:       editingExpense!.id,
-        vendor:   draftVendor   || editingExpense!.vendor,
-        amount:   draftAmount   ? parseFloat(draftAmount) : editingExpense!.amount,
-        date:     draftDate     || editingExpense!.date,
-        category: draftCategory || editingExpense!.category,
-      };
 
       qc.setQueryData(queryKey, (old: any) => {
         if (!old) return old;
         return {
           ...old,
           expenses: old.expenses.map((e: ExpenseItem) =>
-            e.id === snapshot.id ? { ...e, ...snapshot } : e
+            e.id === vars._snapshot.id ? { ...e, ...vars._snapshot } : e
           ),
         };
       });
 
-      setEditingExpense(null);   // close sheet immediately
+      setEditingExpense(null);
       return { previous };
     },
 
@@ -180,12 +186,10 @@ export default function AppExpenses() {
           ? "Saved — your advisor has been notified."
           : "Saved.",
       );
-      // Re-fetch to sync any server-side normalisation (category mapping, etc.)
       qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
     },
 
     onError: (e, _vars, context) => {
-      // Revert the optimistic update
       if (context?.previous) {
         qc.setQueryData(["client", "expenses", month], context.previous);
       }
@@ -385,7 +389,23 @@ export default function AppExpenses() {
           )}
           <SheetFooter className="mt-6 gap-2 flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setEditingExpense(null)}>Cancel</Button>
-            <Button className="flex-1" onClick={() => editMutation.mutate()}>
+            <Button className="flex-1" onClick={() => {
+                if (!editingExpense) return;
+                editMutation.mutate({
+                  id:       editingExpense.id,
+                  vendor:   draftVendor   || undefined,
+                  amount:   draftAmount   ? parseFloat(draftAmount) : undefined,
+                  date:     draftDate     || undefined,
+                  category: draftCategory || undefined,
+                  _snapshot: {
+                    id:       editingExpense.id,
+                    vendor:   draftVendor   || editingExpense.vendor,
+                    amount:   draftAmount   ? parseFloat(draftAmount) : editingExpense.amount,
+                    date:     draftDate     || editingExpense.date,
+                    category: draftCategory || editingExpense.category,
+                  },
+                });
+              }}>
               Save
             </Button>
           </SheetFooter>
