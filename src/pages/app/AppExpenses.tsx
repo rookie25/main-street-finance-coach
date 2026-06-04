@@ -393,7 +393,14 @@ export default function AppExpenses() {
                 editMutation.mutate({
                   id:       editingExpense.id,
                   vendor:   draftVendor   || undefined,
-                  amount:   draftAmount   ? parseFloat(draftAmount) : undefined,
+                  // Only send amount if it actually changed — draftAmount is always
+                  // initialised to String(expense.amount) so it is always truthy,
+                  // meaning a naïve `draftAmount ? parseFloat(...) : undefined` would
+                  // always include amount and falsely trigger the EA-flag logic.
+                  amount: (() => {
+                    const p = parseFloat(draftAmount);
+                    return !isNaN(p) && p !== editingExpense.amount ? p : undefined;
+                  })(),
                   date:     draftDate     || undefined,
                   category: draftCategory || undefined,
                   _snapshot: {
