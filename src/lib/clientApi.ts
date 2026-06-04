@@ -205,12 +205,16 @@ export interface ReceiptConfirmPayload {
 }
 
 export interface ReceiptConfirmResult {
-  expense_id:  string;
-  vendor:      string;
-  amount:      number;
-  date:        string;
-  category:    string | null;
-  receipt_url: string | null;
+  // Normal save
+  expense_id?:  string;
+  vendor?:      string;
+  amount?:      number;
+  date?:        string;
+  category?:    string | null;
+  receipt_url?: string | null;
+  // Duplicate — receipt already in books (e.g. logged via WhatsApp pipeline)
+  status?:  "duplicate";
+  message?: string;
 }
 
 export async function uploadReceipt(file: File): Promise<ReceiptUploadResult> {

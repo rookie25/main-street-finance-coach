@@ -117,9 +117,13 @@ export default function AppExpenses() {
 
     setUploadState({ phase: "saving" });
     try {
-      await confirmReceipt({ raw_id: result.raw_id, vendor: editedVendor.trim(), amount: amtNum, date: editedDate, category: editedCategory || null });
-      toast.success("Receipt saved.");
-      qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+      const saved = await confirmReceipt({ raw_id: result.raw_id, vendor: editedVendor.trim(), amount: amtNum, date: editedDate, category: editedCategory || null });
+      if (saved.status === "duplicate") {
+        toast.success("Already in your books ✅ — this receipt was previously logged via WhatsApp. No action needed.", { duration: 4000 });
+      } else {
+        toast.success("Receipt saved.");
+        qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+      }
       setShowUploadSheet(false);
       setUploadState({ phase: "idle" });
     } catch (e) {
@@ -223,9 +227,13 @@ export default function AppExpenses() {
       date:     manualDate,
       category: manualCategory || null,
     }),
-    onSuccess: () => {
-      toast.success("Expense added.");
-      qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+    onSuccess: (result) => {
+      if (result.status === "duplicate") {
+        toast.success("Already in your books ✅ — no action needed.", { duration: 4000 });
+      } else {
+        toast.success("Expense added.");
+        qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+      }
       setShowManual(false);
       setManualVendor(""); setManualAmount(""); setManualDate(today()); setManualCategory("");
     },
