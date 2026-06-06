@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel,
+  SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
 export interface BusinessDetails {
@@ -38,40 +39,111 @@ export default function StepBusiness({
 
       <div className="space-y-2">
         <Label>Business name</Label>
-        <Input value={value.business_name} onChange={(e) => set("business_name", e.target.value)}
-          placeholder="Main Street Coffee Co." maxLength={120} required />
+        <Input
+          value={value.business_name}
+          onChange={(e) => set("business_name", e.target.value)}
+          placeholder="Main Street Coffee Co."
+          maxLength={120}
+          required
+        />
       </div>
       <div className="space-y-2">
         <Label>Owner name</Label>
-        <Input value={value.owner_name} onChange={(e) => set("owner_name", e.target.value)}
-          placeholder="Jane Doe" maxLength={100} required />
+        <Input
+          value={value.owner_name}
+          onChange={(e) => set("owner_name", e.target.value)}
+          placeholder="Jane Doe"
+          maxLength={100}
+          required
+        />
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Email</Label>
-          <Input type="email" value={value.email} onChange={(e) => set("email", e.target.value)}
-            placeholder="jane@example.com" required />
+          <Input
+            type="email"
+            value={value.email}
+            onChange={(e) => set("email", e.target.value)}
+            placeholder="jane@example.com"
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label>Phone</Label>
-          <Input type="tel" value={value.phone} onChange={(e) => set("phone", e.target.value)}
-            placeholder="(555) 123-4567" />
+          <Input
+            type="tel"
+            value={value.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            placeholder="(555) 123-4567"
+          />
         </div>
       </div>
       <div className="space-y-2">
         <Label>Business address</Label>
-        <Input value={value.address} onChange={(e) => set("address", e.target.value)}
-          placeholder="123 Main St, Springfield, IL" />
+        <Input
+          value={value.address}
+          onChange={(e) => set("address", e.target.value)}
+          placeholder="123 Main St, Springfield, IL"
+        />
       </div>
+
       <div className="space-y-2">
         <Label>Business type</Label>
         <Select value={value.business_type} onValueChange={(v) => set("business_type", v)}>
           <SelectTrigger><SelectValue placeholder="Select one" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="restaurant">Restaurant / Cafe</SelectItem>
-            <SelectItem value="retail">Retail</SelectItem>
-            <SelectItem value="service">Service Business</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            <SelectGroup>
+              <SelectLabel>Food &amp; Beverage</SelectLabel>
+              <SelectItem value="coffee_shop">Coffee Shop / Café</SelectItem>
+              <SelectItem value="restaurant">Restaurant</SelectItem>
+              <SelectItem value="food_truck">Food Truck</SelectItem>
+              <SelectItem value="bakery">Bakery</SelectItem>
+              <SelectItem value="bar">Bar</SelectItem>
+              <SelectItem value="ice_cream">Ice Cream Shop</SelectItem>
+              <SelectItem value="pizza">Pizza</SelectItem>
+              <SelectItem value="sandwich_deli">Sandwich / Deli</SelectItem>
+            </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Retail</SelectLabel>
+              <SelectItem value="retail">Retail (General)</SelectItem>
+              <SelectItem value="clothing">Clothing Store</SelectItem>
+              <SelectItem value="shoe_store">Shoe Store</SelectItem>
+              <SelectItem value="gift_shop">Gift Shop</SelectItem>
+              <SelectItem value="electronics">Electronics</SelectItem>
+              <SelectItem value="furniture">Furniture</SelectItem>
+              <SelectItem value="home_goods">Home Goods</SelectItem>
+              <SelectItem value="sporting_goods">Sporting Goods</SelectItem>
+              <SelectItem value="pet_store">Pet Store</SelectItem>
+            </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Health &amp; Beauty</SelectLabel>
+              <SelectItem value="hair_salon">Hair Salon</SelectItem>
+              <SelectItem value="nail_salon">Nail Salon</SelectItem>
+              <SelectItem value="spa">Spa</SelectItem>
+              <SelectItem value="massage">Massage</SelectItem>
+            </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Fitness</SelectLabel>
+              <SelectItem value="gym">Gym</SelectItem>
+              <SelectItem value="fitness_studio">Fitness Studio</SelectItem>
+              <SelectItem value="yoga">Yoga Studio</SelectItem>
+              <SelectItem value="pilates">Pilates</SelectItem>
+              <SelectItem value="crossfit">CrossFit / Functional Fitness</SelectItem>
+            </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Automotive</SelectLabel>
+              <SelectItem value="auto_repair">Auto Repair Shop</SelectItem>
+              <SelectItem value="mechanic">Mechanic</SelectItem>
+            </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Print</SelectLabel>
+              <SelectItem value="print_shop">Print Shop</SelectItem>
+            </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Other</SelectLabel>
+              <SelectItem value="service">Service Business</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>

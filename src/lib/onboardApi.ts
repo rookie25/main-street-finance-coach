@@ -21,9 +21,12 @@ export interface SubmitPayload {
   phone?: string;
   address?: string;
   business_type?: string;
+  // Legacy named fields kept for backwards compatibility with existing backend handler.
   square_api_key?: string;
   plaid_token?: string;
   gmail_token?: string;
+  // Flexible map for all integration keys; backend encrypts each value.
+  integration_keys?: Record<string, string>;
 }
 
 async function handle<T>(res: Response): Promise<T> {

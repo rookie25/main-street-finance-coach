@@ -7,7 +7,7 @@ import {
   type OnboardSession,
 } from "@/lib/onboardApi";
 import StepBusiness, { type BusinessDetails } from "@/components/onboard/StepBusiness";
-import StepIntegrations, { type Integrations } from "@/components/onboard/StepIntegrations";
+import StepIntegrations, { type IntegrationValues } from "@/components/onboard/StepIntegrations";
 import StepPayment from "@/components/onboard/StepPayment";
 import StepSuccess from "@/components/onboard/StepSuccess";
 
@@ -34,9 +34,7 @@ export default function Onboard() {
   const [business, setBusiness] = useState<BusinessDetails>({
     business_name: "", owner_name: "", email: "", phone: "", address: "", business_type: "",
   });
-  const [integrations, setIntegrations] = useState<Integrations>({
-    square_api_key: "", plaid_token: "", gmail_token: "",
-  });
+  const [integrations, setIntegrations] = useState<IntegrationValues>({});
 
   useEffect(() => {
     let active = true;
@@ -64,6 +62,10 @@ export default function Onboard() {
   async function handleSubmit() {
     setSubmitting(true);
     try {
+      // Strip empty values so we don't send empty strings to the backend.
+      const cleanedKeys = Object.fromEntries(
+        Object.entries(integrations).filter(([, v]) => v.trim()),
+      );
       await submitOnboarding({
         token,
         business_name: business.business_name,
@@ -72,9 +74,11 @@ export default function Onboard() {
         phone: business.phone || undefined,
         address: business.address || undefined,
         business_type: business.business_type || undefined,
-        square_api_key: integrations.square_api_key || undefined,
-        plaid_token: integrations.plaid_token || undefined,
-        gmail_token: integrations.gmail_token || undefined,
+        // Legacy fields mapped by id for backwards compat with existing backend handler.
+        square_api_key: cleanedKeys["square"] || undefined,
+        plaid_token:    cleanedKeys["plaid"]  || undefined,
+        gmail_token:    cleanedKeys["gmail"]  || undefined,
+        integration_keys: Object.keys(cleanedKeys).length ? cleanedKeys : undefined,
       });
       setStep(2);
     } catch (err) {
@@ -132,8 +136,12 @@ export default function Onboard() {
         )}
         {step === 1 && (
           <StepIntegrations
-            value={integrations} onChange={setIntegrations}
-            onBack={() => setStep(0)} onNext={handleSubmit} submitting={submitting}
+            businessType={business.business_type}
+            value={integrations}
+            onChange={setIntegrations}
+            onBack={() => setStep(0)}
+            onNext={handleSubmit}
+            submitting={submitting}
           />
         )}
         {step === 2 && (
