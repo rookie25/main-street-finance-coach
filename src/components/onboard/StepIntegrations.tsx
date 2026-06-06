@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Clipboard, ShieldCheck, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Clipboard, Loader2, ShieldCheck, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -7,37 +8,38 @@ import {
   type ConnectionStatus,
   getIntegrationsForBusiness,
 } from "@/lib/integrations";
+import { getSquareAuthUrl } from "@/lib/onboardApi";
 
-// Record<integrationId, string value (api key, oauth token, csv filename)>
+// Record<integrationId, value — api key text, "oauth_connected", or csv filename>
 export type IntegrationValues = Record<string, string>;
 
 interface CardState {
   status: ConnectionStatus;
-  draft: string;   // the text field value before "Save"
+  draft: string;
   errorMsg?: string;
 }
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: ConnectionStatus }) {
+function StatusBadge({ status, errorMsg }: { status: ConnectionStatus; errorMsg?: string }) {
   if (status === "idle")       return <span className="text-xs text-muted-foreground">Not connected</span>;
-  if (status === "connecting") return <span className="text-xs text-amber-500 animate-pulse">Connecting…</span>;
+  if (status === "connecting") return <span className="text-xs text-amber-500 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Connecting…</span>;
   if (status === "connected")  return <span className="text-xs font-medium text-green-600">✓ Connected</span>;
-  return <span className="text-xs text-destructive">✗ Error</span>;
+  return <span className="text-xs text-destructive" title={errorMsg}>✗ Error — try again</span>;
 }
 
 // ── Method badge ──────────────────────────────────────────────────────────────
 
 function MethodBadge({ method }: { method: Integration["method"] }) {
-  const map = {
+  const styles = {
     oauth:   "bg-blue-50 text-blue-700 border-blue-200",
     api_key: "bg-amber-50 text-amber-700 border-amber-200",
     csv:     "bg-slate-100 text-slate-600 border-slate-200",
   };
-  const label = { oauth: "OAuth", api_key: "API Key", csv: "CSV" }[method];
+  const labels = { oauth: "OAuth", api_key: "API Key", csv: "CSV" };
   return (
-    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded border ${map[method]}`}>
-      {label}
+    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded border ${styles[method]}`}>
+      {labels[method]}
     </span>
   );
 }
@@ -46,7 +48,7 @@ function MethodBadge({ method }: { method: Integration["method"] }) {
 
 function IntegrationIcon({ bgColor, initials }: { bgColor: string; initials: string }) {
   return (
-    <div className={`${bgColor} text-white rounded-xl w-10 h-10 flex items-center justify-center text-xs font-bold flex-shrink-0`}>
+    <div className={`${bgColor} text-white rounded-xl w-10 h-10 flex items-center justify-center text-xs font-bold flex-shrink-0 select-none`}>
       {initials}
     </div>
   );
@@ -59,11 +61,13 @@ function IntegrationCard({
   cardState,
   onSave,
   onDraftChange,
+  onOAuthConnect,
 }: {
   integration: Integration;
   cardState: CardState;
   onSave: (value: string) => void;
   onDraftChange: (draft: string) => void;
+  onOAuthConnect?: () => Promise<void>;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -73,7 +77,7 @@ function IntegrationCard({
       const text = await navigator.clipboard.readText();
       onDraftChange(text.trim());
     } catch {
-      // clipboard access denied — user can type manually
+      // Clipboard access denied — user can type manually.
     }
   }
 
@@ -84,7 +88,7 @@ function IntegrationCard({
 
   return (
     <div className="rounded-2xl border border-border p-4 space-y-3">
-      {/* Header row */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <IntegrationIcon bgColor={integration.bgColor} initials={integration.initials} />
@@ -97,25 +101,46 @@ function IntegrationCard({
           </div>
         </div>
         <div className="flex-shrink-0">
-          <StatusBadge status={cardState.status} />
+          <StatusBadge status={cardState.status} errorMsg={cardState.errorMsg} />
         </div>
       </div>
 
       {/* Connection UI */}
-      {integration.method === "oauth" && (
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            disabled
-            className="bg-green-600 hover:bg-green-700 text-white opacity-70"
-          >
-            Connect {integration.name}
-          </Button>
-          <span className="text-[11px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
-            coming soon
-          </span>
+      {integration.method === "oauth" && cardState.status !== "connected" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {onOAuthConnect ? (
+            // Live OAuth flow
+            <Button
+              type="button"
+              size="sm"
+              disabled={cardState.status === "connecting"}
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={onOAuthConnect}
+            >
+              {cardState.status === "connecting" && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+              Connect {integration.name}
+            </Button>
+          ) : (
+            // Not yet wired — coming soon
+            <>
+              <Button
+                type="button"
+                size="sm"
+                disabled
+                className="bg-green-600 hover:bg-green-700 text-white opacity-60"
+              >
+                Connect {integration.name}
+              </Button>
+              <span className="text-[11px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
+                coming soon
+              </span>
+            </>
+          )}
         </div>
+      )}
+
+      {integration.method === "oauth" && cardState.status === "connected" && (
+        <p className="text-xs text-green-600 font-medium">Account linked successfully.</p>
       )}
 
       {integration.method === "api_key" && cardState.status !== "connected" && (
@@ -194,14 +219,14 @@ function IntegrationCard({
       {integration.method === "csv" && cardState.status === "connected" && (
         <p className="text-xs text-muted-foreground">
           File: <span className="font-medium text-foreground">{cardState.draft}</span>
-          {" "}·{" "}
+          {" · "}
           <button type="button" className="hover:underline" onClick={() => onDraftChange("")}>
             replace
           </button>
         </p>
       )}
 
-      {cardState.errorMsg && (
+      {cardState.errorMsg && cardState.status === "error" && (
         <p className="text-xs text-destructive">{cardState.errorMsg}</p>
       )}
     </div>
@@ -211,31 +236,40 @@ function IntegrationCard({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function StepIntegrations({
+  token,
   businessType,
   value,
   onChange,
+  errorOverrides = {},
   onBack,
   onNext,
   submitting,
 }: {
+  token: string;
   businessType: string;
   value: IntegrationValues;
   onChange: (v: IntegrationValues) => void;
+  errorOverrides?: Record<string, string>;
   onBack: () => void;
   onNext: () => void;
   submitting: boolean;
 }) {
   const { primary, secondary } = getIntegrationsForBusiness(businessType || "other");
   const [showSecondary, setShowSecondary] = useState(false);
-
-  // Per-card draft + status state (separate from parent's committed values)
   const [cardStates, setCardStates] = useState<Record<string, CardState>>({});
 
   function getCardState(id: string): CardState {
-    return cardStates[id] ?? {
-      status: value[id] ? "connected" : "idle",
-      draft: value[id] ?? "",
-    };
+    // Explicit per-card state takes precedence.
+    if (cardStates[id]) return cardStates[id];
+    // Pre-loaded error from URL param (e.g. square=error on return).
+    if (errorOverrides[id]) {
+      return { status: "error", draft: "", errorMsg: errorOverrides[id] };
+    }
+    // Pre-loaded success from URL param (e.g. square=connected on return).
+    if (value[id]) {
+      return { status: "connected", draft: value[id] };
+    }
+    return { status: "idle", draft: "" };
   }
 
   function updateDraft(id: string, draft: string) {
@@ -248,12 +282,47 @@ export default function StepIntegrations({
   function saveValue(id: string, savedValue: string) {
     setCardStates((prev) => ({
       ...prev,
-      [id]: { ...getCardState(id), draft: savedValue, status: "connected" },
+      [id]: { status: "connected", draft: savedValue },
     }));
     onChange({ ...value, [id]: savedValue });
   }
 
-  const connectedCount = Object.values(cardStates).filter((s) => s.status === "connected").length;
+  function setConnecting(id: string) {
+    setCardStates((prev) => ({
+      ...prev,
+      [id]: { status: "connecting", draft: prev[id]?.draft ?? "" },
+    }));
+  }
+
+  function setCardError(id: string, msg: string) {
+    setCardStates((prev) => ({
+      ...prev,
+      [id]: { status: "error", draft: prev[id]?.draft ?? "", errorMsg: msg },
+    }));
+  }
+
+  // Square OAuth — fetches the authorize URL then redirects the browser.
+  async function handleSquareOAuth() {
+    setConnecting("square");
+    try {
+      const { auth_url } = await getSquareAuthUrl(token);
+      window.location.href = auth_url;
+      // Browser navigates away — no further state update needed.
+    } catch (err) {
+      setCardError("square", "Could not start Square authorization. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Square connection failed.");
+    }
+  }
+
+  // Map integration id → OAuth handler (add more here as we wire each one).
+  function oauthHandler(integ: Integration): (() => Promise<void>) | undefined {
+    if (integ.oauthReady && integ.id === "square") return handleSquareOAuth;
+    return undefined;
+  }
+
+  const connectedCount = [...primary, ...secondary].filter(
+    (integ) => getCardState(integ.id).status === "connected",
+  ).length;
 
   return (
     <div className="space-y-5">
@@ -278,6 +347,7 @@ export default function StepIntegrations({
             cardState={getCardState(integ.id)}
             onSave={(v) => saveValue(integ.id, v)}
             onDraftChange={(d) => updateDraft(integ.id, d)}
+            onOAuthConnect={oauthHandler(integ)}
           />
         ))}
       </div>
@@ -294,6 +364,7 @@ export default function StepIntegrations({
                   cardState={getCardState(integ.id)}
                   onSave={(v) => saveValue(integ.id, v)}
                   onDraftChange={(d) => updateDraft(integ.id, d)}
+                  onOAuthConnect={oauthHandler(integ)}
                 />
               ))}
             </div>

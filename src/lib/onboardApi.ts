@@ -72,3 +72,9 @@ export function createCheckout(token: string): Promise<{ url: string }> {
     body: JSON.stringify({ token }),
   }).then((r) => handle<{ url: string }>(r));
 }
+
+export function getSquareAuthUrl(token: string): Promise<{ auth_url: string }> {
+  return fetch(`${BASE}/onboard/square/authorize?token=${encodeURIComponent(token)}`).then((r) =>
+    handle<{ auth_url: string }>(r),
+  );
+}

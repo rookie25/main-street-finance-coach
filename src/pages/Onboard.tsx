@@ -21,20 +21,26 @@ const STEPS = ["Business", "Integrations", "Payment", "Done"];
 export default function Onboard() {
   const { token = "" } = useParams();
   const [params] = useSearchParams();
-  const paidParam = params.get("paid") === "1";
-  const canceled = params.get("canceled") === "1";
+
+  const paidParam   = params.get("paid") === "1";
+  const canceled    = params.get("canceled") === "1";
+  const squareParam = params.get("square") as "connected" | "error" | null;
+  // step param is 1-indexed (step=2 = Integrations, step=3 = Payment)
+  const stepParam   = params.get("step");
   // amount URL param is display-only; the backend session carries the authoritative value.
   const amountParam = params.get("amount");
 
   const [load, setLoad] = useState<LoadState>({ kind: "loading" });
   const [step, setStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting,  setSubmitting]  = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
   const [business, setBusiness] = useState<BusinessDetails>({
     business_name: "", owner_name: "", email: "", phone: "", address: "", business_type: "",
   });
-  const [integrations, setIntegrations] = useState<IntegrationValues>({});
+  const [integrations,   setIntegrations]   = useState<IntegrationValues>({});
+  // errorOverrides maps integration id → error message shown on the card.
+  const [oauthErrors, setOauthErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let active = true;
@@ -42,9 +48,22 @@ export default function Onboard() {
       .then((session) => {
         if (!active) return;
         setLoad({ kind: "ready", session });
-        // Returning from a successful Stripe redirect, or already completed → success.
-        if (paidParam || session.status === "completed") setStep(3);
-        else if (canceled) setStep(2);
+
+        if (paidParam || session.status === "completed") {
+          setStep(3);
+        } else if (canceled) {
+          setStep(2);
+        } else if (squareParam) {
+          // Return from Square OAuth — go back to Integrations step (1-indexed step=2 → index 1).
+          const targetStep = stepParam ? Math.max(0, Number(stepParam) - 1) : 1;
+          setStep(targetStep);
+          if (squareParam === "connected") {
+            // Mark Square as connected using the sentinel value.
+            setIntegrations((prev) => ({ ...prev, square: "oauth_connected" }));
+          } else if (squareParam === "error") {
+            setOauthErrors({ square: "Square authorization failed. Please try again." });
+          }
+        }
       })
       .catch((err) => {
         if (!active) return;
@@ -57,27 +76,27 @@ export default function Onboard() {
         setLoad({ kind: "error", message });
       });
     return () => { active = false; };
-  }, [token, paidParam, canceled]);
+  }, [token, paidParam, canceled, squareParam, stepParam]);
 
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      // Strip empty values so we don't send empty strings to the backend.
+      // Strip empty and sentinel values before sending to the backend.
       const cleanedKeys = Object.fromEntries(
-        Object.entries(integrations).filter(([, v]) => v.trim()),
+        Object.entries(integrations).filter(([, v]) => v.trim() && v !== "oauth_connected"),
       );
       await submitOnboarding({
         token,
         business_name: business.business_name,
-        owner_name: business.owner_name,
-        email: business.email,
-        phone: business.phone || undefined,
-        address: business.address || undefined,
+        owner_name:    business.owner_name,
+        email:         business.email,
+        phone:         business.phone    || undefined,
+        address:       business.address  || undefined,
         business_type: business.business_type || undefined,
-        // Legacy fields mapped by id for backwards compat with existing backend handler.
-        square_api_key: cleanedKeys["square"] || undefined,
-        plaid_token:    cleanedKeys["plaid"]  || undefined,
-        gmail_token:    cleanedKeys["gmail"]  || undefined,
+        // Legacy named fields for backwards compat with existing backend column handlers.
+        plaid_token: cleanedKeys["plaid"] || undefined,
+        gmail_token: cleanedKeys["gmail"] || undefined,
+        // Full map for any other integration keys (Square token stored via OAuth callback, not here).
         integration_keys: Object.keys(cleanedKeys).length ? cleanedKeys : undefined,
       });
       setStep(2);
@@ -92,7 +111,7 @@ export default function Onboard() {
     setRedirecting(true);
     try {
       const { url } = await createCheckout(token);
-      window.location.href = url; // hand off to Stripe-hosted checkout
+      window.location.href = url;
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Could not start checkout. Please try again.");
       setRedirecting(false);
@@ -136,9 +155,11 @@ export default function Onboard() {
         )}
         {step === 1 && (
           <StepIntegrations
+            token={token}
             businessType={business.business_type}
             value={integrations}
             onChange={setIntegrations}
+            errorOverrides={oauthErrors}
             onBack={() => setStep(0)}
             onNext={handleSubmit}
             submitting={submitting}

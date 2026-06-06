@@ -6,8 +6,9 @@ export interface Integration {
   name: string;
   method: ConnectionMethod;
   initials: string;
-  bgColor: string;   // tailwind bg class for icon chip
-  hint: string;      // help text shown under name
+  bgColor: string;    // tailwind bg class for icon chip
+  hint: string;       // help text shown under name
+  oauthReady?: boolean; // true = live OAuth flow wired; false/absent = coming soon
 }
 
 export interface IntegrationState {
@@ -17,7 +18,7 @@ export interface IntegrationState {
 }
 
 export const CATALOG: Record<string, Integration> = {
-  square:      { id: "square",      name: "Square",       method: "oauth",   initials: "SQ", bgColor: "bg-neutral-900", hint: "Connect your Square account" },
+  square:      { id: "square",      name: "Square",       method: "oauth",   initials: "SQ", bgColor: "bg-neutral-900", hint: "Connect your Square account", oauthReady: true },
   shopify:     { id: "shopify",     name: "Shopify",      method: "oauth",   initials: "SH", bgColor: "bg-green-600",   hint: "Connect your Shopify store" },
   toast:       { id: "toast",       name: "Toast",        method: "api_key", initials: "TS", bgColor: "bg-red-600",     hint: "Toast → Settings → API Access → copy key" },
   clover:      { id: "clover",      name: "Clover",       method: "api_key", initials: "CL", bgColor: "bg-green-500",   hint: "Clover → Dashboard → API tokens" },
