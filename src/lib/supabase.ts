@@ -20,6 +20,6 @@ export const supabase = createClient(supabaseUrl ?? "", supabaseAnonKey ?? "", {
     autoRefreshToken: true,
     // We use email/password sign-in, not magic-link/OAuth redirects, so there's
     // no auth fragment to parse out of the URL on public marketing routes.
-    detectSessionInUrl: false,
+    detectSessionInUrl: true,
   },
 });

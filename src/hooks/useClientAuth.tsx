@@ -10,6 +10,8 @@ interface ClientAuthValue {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -17,7 +19,7 @@ const ClientAuthContext = createContext<ClientAuthValue | undefined>(undefined);
 
 export function ClientAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -40,12 +42,37 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function signInWithGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/app` },
+    });
+    if (error) throw error;
+  }
+
+  async function resetPassword(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    if (error) throw error;
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
 
   return (
-    <ClientAuthContext.Provider value={{ session, user: session?.user ?? null, loading, signIn, signOut }}>
+    <ClientAuthContext.Provider
+      value={{
+        session,
+        user: session?.user ?? null,
+        loading,
+        signIn,
+        signInWithGoogle,
+        resetPassword,
+        signOut,
+      }}
+    >
       {children}
     </ClientAuthContext.Provider>
   );

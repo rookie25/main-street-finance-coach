@@ -20,8 +20,10 @@ import { EAAuthProvider } from "@/hooks/useEAAuth";
 import RequireAuth from "@/components/ea/RequireAuth";
 import EALayout from "@/components/layout/EALayout";
 import EALogin from "./pages/ea/EALogin";
+import EASignup from "./pages/ea/EASignup";
 import EAHome from "./pages/ea/EAHome";
 import EAClient from "./pages/ea/EAClient";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // Client Portal (Component 4) — standalone, auth-gated, mobile-first.
 import { ClientAuthProvider } from "@/hooks/useClientAuth";
@@ -68,9 +70,13 @@ const App = () => (
           {/* Onboarding portal — standalone chrome, outside the marketing SiteLayout. */}
           <Route path="/onboard/:token" element={<Onboard />} />
 
+          {/* Password-reset landing — outside all auth gates, needs no session. */}
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
+
           {/* EA Portal — auth context wraps login + protected routes. */}
           <Route element={<EAAuthGate />}>
             <Route path="/ea/login" element={<EALogin />} />
+            <Route path="/ea/signup" element={<EASignup />} />
             <Route element={<RequireAuth />}>
               <Route element={<EALayout />}>
                 <Route path="/ea" element={<EAHome />} />
