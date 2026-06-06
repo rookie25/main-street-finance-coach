@@ -30,17 +30,31 @@ export default function Onboard() {
   // amount URL param is display-only; the backend session carries the authoritative value.
   const amountParam = params.get("amount");
 
+  // Keyed by token so multiple simultaneous sessions don't collide.
+  const storageKey = `onboard_business_${token}`;
+
   const [load, setLoad] = useState<LoadState>({ kind: "loading" });
   const [step, setStep] = useState(0);
   const [submitting,  setSubmitting]  = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  const [business, setBusiness] = useState<BusinessDetails>({
-    business_name: "", owner_name: "", email: "", phone: "", address: "", business_type: "",
+  // Lazy initializer reads sessionStorage once on mount so business_type survives
+  // the full-page OAuth redirect (Square → Railway callback → frontend reload).
+  const [business, setBusiness] = useState<BusinessDetails>(() => {
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      if (stored) return JSON.parse(stored) as BusinessDetails;
+    } catch { /* sessionStorage unavailable or corrupt — fall through */ }
+    return { business_name: "", owner_name: "", email: "", phone: "", address: "", business_type: "" };
   });
   const [integrations,   setIntegrations]   = useState<IntegrationValues>({});
   // errorOverrides maps integration id → error message shown on the card.
   const [oauthErrors, setOauthErrors] = useState<Record<string, string>>({});
+
+  // Persist business details whenever they change so OAuth redirects don't lose them.
+  useEffect(() => {
+    try { sessionStorage.setItem(storageKey, JSON.stringify(business)); } catch { /* ignore */ }
+  }, [business, storageKey]);
 
   useEffect(() => {
     let active = true;
@@ -51,6 +65,7 @@ export default function Onboard() {
 
         if (paidParam || session.status === "completed") {
           setStep(3);
+          try { sessionStorage.removeItem(storageKey); } catch { /* ignore */ }
         } else if (canceled) {
           setStep(2);
         } else if (squareParam) {
