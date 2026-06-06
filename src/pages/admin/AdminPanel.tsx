@@ -1,0 +1,595 @@
+import { useCallback, useEffect, useState } from "react";
+import { ExternalLink, Loader2, LogOut, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+const BASE = (import.meta.env.VITE_RAILWAY_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const STORAGE_KEY = "dl_admin_key";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface Lead {
+  id: number;
+  name: string;
+  business_name: string;
+  business_type: string;
+  monthly_revenue: string;
+  bookkeeping_spend: string;
+  is_cpa_partner: boolean;
+  status: "new" | "contacted" | "qualified" | "closed";
+  message?: string;
+  created_at: string;
+}
+
+interface Client {
+  business_name: string | null;
+  schema_name: string;
+  onboarding_status: string | null;
+  is_active: boolean;
+  monthly_fee: number | null;
+  square_connected: boolean;
+  created_at: string;
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+
+async function apiFetch<T>(path: string, key: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Key": key,
+      ...(init?.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? `Error ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+function toSchema(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+// ── Status badge ──────────────────────────────────────────────────────────────
+
+const STATUS_STYLES: Record<string, string> = {
+  new:       "bg-amber-100 text-amber-800 border-amber-200",
+  contacted: "bg-blue-100 text-blue-800 border-blue-200",
+  qualified: "bg-green-100 text-green-800 border-green-200",
+  closed:    "bg-slate-100 text-slate-600 border-slate-200",
+};
+
+function LeadStatusSelect({ lead, adminKey, onChange }: {
+  lead: Lead;
+  adminKey: string;
+  onChange: (id: number, status: string) => void;
+}) {
+  async function update(status: string) {
+    try {
+      await apiFetch(`/admin/leads/${lead.id}/status`, adminKey, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      onChange(lead.id, status);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update status.");
+    }
+  }
+
+  return (
+    <select
+      value={lead.status}
+      onChange={(e) => update(e.target.value)}
+      className="text-xs rounded-md border border-border bg-background px-1.5 py-0.5 focus:outline-none"
+    >
+      {["new", "contacted", "qualified", "closed"].map((s) => (
+        <option key={s} value={s}>{s}</option>
+      ))}
+    </select>
+  );
+}
+
+// ── Send Onboarding Modal ─────────────────────────────────────────────────────
+
+interface ModalProps {
+  lead: Lead | null;
+  onClose: () => void;
+  adminKey: string;
+  onSent: (leadId: number) => void;
+}
+
+function SendOnboardingModal({ lead, onClose, adminKey, onSent }: ModalProps) {
+  const [email,      setEmail]      = useState("");
+  const [monthlyFee, setMonthlyFee] = useState("");
+  const [setupFee,   setSetupFee]   = useState("750");
+  const [schema,     setSchema]     = useState("");
+  const [sending,    setSending]    = useState(false);
+  const [result,     setResult]     = useState<{ link: string } | null>(null);
+
+  useEffect(() => {
+    if (lead) {
+      setSchema(toSchema(lead.business_name));
+      setEmail("");
+      setMonthlyFee("");
+      setSetupFee("750");
+      setResult(null);
+    }
+  }, [lead]);
+
+  const total = (Number(monthlyFee) || 0) + (Number(setupFee) || 0);
+
+  async function handleSend() {
+    if (!lead) return;
+    if (!email.trim() || !monthlyFee || !schema.trim()) {
+      toast.error("Email, monthly fee, and schema are required.");
+      return;
+    }
+    setSending(true);
+    try {
+      const data = await apiFetch<{ link: string }>("/admin/send-onboarding", adminKey, {
+        method: "POST",
+        body: JSON.stringify({
+          email:         email.trim(),
+          name:          lead.name,
+          business_name: lead.business_name,
+          client_schema: schema.trim(),
+          monthly_fee:   Number(monthlyFee),
+          setup_fee:     Number(setupFee) || 750,
+        }),
+      });
+      setResult(data);
+      onSent(lead.id);
+      toast.success("Onboarding link sent!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send link.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!lead} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Send onboarding link</DialogTitle>
+        </DialogHeader>
+
+        {result ? (
+          <div className="space-y-4 py-2">
+            <p className="text-sm font-medium text-green-700">Link sent successfully!</p>
+            <div className="bg-secondary rounded-xl p-3 break-all">
+              <p className="text-xs text-muted-foreground mb-1">Onboarding link</p>
+              <a
+                href={result.link}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-accent hover:underline flex items-center gap-1"
+              >
+                {result.link}
+                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+              </a>
+            </div>
+            <Button className="w-full" variant="outline" onClick={onClose}>Done</Button>
+          </div>
+        ) : (
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3 p-3 bg-secondary rounded-xl text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Name</p>
+                <p className="font-medium">{lead?.name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Business</p>
+                <p className="font-medium">{lead?.business_name}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Client email</Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="jane@example.com"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Monthly fee ($)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={monthlyFee}
+                  onChange={(e) => setMonthlyFee(e.target.value)}
+                  placeholder="299"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Setup fee ($)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={setupFee}
+                  onChange={(e) => setSetupFee(e.target.value)}
+                  placeholder="750"
+                />
+              </div>
+            </div>
+
+            {total > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Total charged: <span className="font-semibold text-foreground">${total.toLocaleString()}</span>
+              </p>
+            )}
+
+            <div className="space-y-2">
+              <Label>Client schema</Label>
+              <Input
+                value={schema}
+                onChange={(e) => setSchema(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                placeholder="main_street_coffee"
+              />
+              <p className="text-xs text-muted-foreground">
+                Lowercase + underscores only — used as the DB schema identifier.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={onClose} disabled={sending}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleSend} disabled={sending}>
+                {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send link
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Leads table ───────────────────────────────────────────────────────────────
+
+function LeadsTable({ leads, adminKey, onStatusChange, onSendLink }: {
+  leads: Lead[];
+  adminKey: string;
+  onStatusChange: (id: number, status: string) => void;
+  onSendLink: (lead: Lead) => void;
+}) {
+  if (!leads.length) {
+    return <p className="text-sm text-muted-foreground py-4">No leads yet.</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto -mx-1">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Name</th>
+            <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Business</th>
+            <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden md:table-cell">Revenue</th>
+            <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden lg:table-cell">CPA?</th>
+            <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Status</th>
+            <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden sm:table-cell">Date</th>
+            <th className="py-2 px-2" />
+          </tr>
+        </thead>
+        <tbody>
+          {leads.map((lead) => (
+            <tr key={lead.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+              <td className="py-2.5 px-2 font-medium">{lead.name}</td>
+              <td className="py-2.5 px-2">
+                <div>{lead.business_name}</div>
+                <div className="text-xs text-muted-foreground">{lead.business_type}</div>
+              </td>
+              <td className="py-2.5 px-2 hidden md:table-cell text-muted-foreground text-xs">
+                {lead.monthly_revenue || "—"}
+              </td>
+              <td className="py-2.5 px-2 hidden lg:table-cell text-muted-foreground text-xs">
+                {lead.is_cpa_partner ? "Yes" : "No"}
+              </td>
+              <td className="py-2.5 px-2">
+                <LeadStatusSelect lead={lead} adminKey={adminKey} onChange={onStatusChange} />
+              </td>
+              <td className="py-2.5 px-2 hidden sm:table-cell text-xs text-muted-foreground">
+                {lead.created_at?.slice(0, 10) ?? "—"}
+              </td>
+              <td className="py-2.5 px-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 px-2 whitespace-nowrap"
+                  onClick={() => onSendLink(lead)}
+                >
+                  Send link
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Clients table ─────────────────────────────────────────────────────────────
+
+function ClientsTable({ clients }: { clients: Client[] }) {
+  const active = clients.filter((c) => c.is_active);
+  const mrr    = active.reduce((s, c) => s + (c.monthly_fee ?? 0), 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-secondary rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">Total clients</p>
+          <p className="text-2xl font-semibold text-primary mt-1">{clients.length}</p>
+        </div>
+        <div className="bg-secondary rounded-xl p-4">
+          <p className="text-xs text-muted-foreground">MRR (active)</p>
+          <p className="text-2xl font-semibold text-primary mt-1">${mrr.toLocaleString()}</p>
+        </div>
+      </div>
+
+      {!clients.length ? (
+        <p className="text-sm text-muted-foreground py-4">No clients yet.</p>
+      ) : (
+        <div className="overflow-x-auto -mx-1">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Business</th>
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden md:table-cell">Schema</th>
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Onboarding</th>
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden sm:table-cell">Active</th>
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden lg:table-cell">MRR</th>
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Square</th>
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden sm:table-cell">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((c) => (
+                <tr key={c.schema_name} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                  <td className="py-2.5 px-2 font-medium">{c.business_name ?? "—"}</td>
+                  <td className="py-2.5 px-2 hidden md:table-cell">
+                    <span className="text-xs font-mono text-muted-foreground">{c.schema_name}</span>
+                  </td>
+                  <td className="py-2.5 px-2 text-xs text-muted-foreground">
+                    {c.onboarding_status ?? "—"}
+                  </td>
+                  <td className="py-2.5 px-2 hidden sm:table-cell">
+                    {c.is_active
+                      ? <span className="text-xs text-green-600 font-medium">Yes</span>
+                      : <span className="text-xs text-muted-foreground">No</span>}
+                  </td>
+                  <td className="py-2.5 px-2 hidden lg:table-cell text-muted-foreground text-xs">
+                    {c.monthly_fee != null ? `$${c.monthly_fee.toLocaleString()}` : "—"}
+                  </td>
+                  <td className="py-2.5 px-2">
+                    {c.square_connected
+                      ? <span className="text-xs text-green-600 font-medium">✓ Yes</span>
+                      : <span className="text-xs text-muted-foreground">No</span>}
+                  </td>
+                  <td className="py-2.5 px-2 hidden sm:table-cell text-xs text-muted-foreground">
+                    {c.created_at?.slice(0, 10) ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Login screen ──────────────────────────────────────────────────────────────
+
+function AdminLogin({ onSuccess }: { onSuccess: (key: string) => void }) {
+  const [key,      setKey]      = useState("");
+  const [error,    setError]    = useState("");
+  const [checking, setChecking] = useState(false);
+
+  async function verify() {
+    const trimmed = key.trim();
+    if (!trimmed) return;
+    setChecking(true);
+    setError("");
+    try {
+      await apiFetch("/admin/leads", trimmed);
+      sessionStorage.setItem(STORAGE_KEY, trimmed);
+      onSuccess(trimmed);
+    } catch {
+      setError("Invalid password.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-6">
+      <div className="w-full max-w-xs">
+        <div className="text-center mb-8">
+          <div className="text-xs uppercase tracking-[0.2em] text-accent mb-2">Desired Labs</div>
+          <h1 className="font-display text-2xl font-semibold text-primary">Admin access</h1>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-card space-y-4">
+          <div className="space-y-2">
+            <Label>Admin password</Label>
+            <Input
+              type="password"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void verify(); }}
+              placeholder="••••••••"
+              autoFocus
+            />
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <Button className="w-full" onClick={() => void verify()} disabled={checking || !key.trim()}>
+            {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Sign in
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main dashboard ────────────────────────────────────────────────────────────
+
+export default function AdminPanel() {
+  const [adminKey, setAdminKey] = useState<string | null>(() => {
+    try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
+  });
+  const [tab,          setTab]          = useState<"leads" | "clients">("leads");
+  const [leads,        setLeads]        = useState<Lead[]>([]);
+  const [clients,      setClients]      = useState<Client[]>([]);
+  const [loading,      setLoading]      = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
+  const loadData = useCallback(async (key: string) => {
+    setLoading(true);
+    try {
+      const [l, c] = await Promise.all([
+        apiFetch<Lead[]>("/admin/leads", key),
+        apiFetch<Client[]>("/admin/clients", key),
+      ]);
+      setLeads(l);
+      setClients(c);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (adminKey) void loadData(adminKey);
+  }, [adminKey, loadData]);
+
+  if (!adminKey) {
+    return <AdminLogin onSuccess={(key) => setAdminKey(key)} />;
+  }
+
+  function signOut() {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    setAdminKey(null);
+  }
+
+  function handleStatusChange(id: number, status: string) {
+    setLeads((prev) =>
+      prev.map((l) => l.id === id ? { ...l, status: status as Lead["status"] } : l),
+    );
+  }
+
+  function handleSent(leadId: number) {
+    handleStatusChange(leadId, "contacted");
+    setSelectedLead(null);
+  }
+
+  const isLoading = loading && !leads.length && !clients.length;
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border bg-card sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-xs uppercase tracking-[0.2em] text-accent">Desired Labs</span>
+            <span className="text-muted-foreground text-sm">/</span>
+            <span className="font-semibold text-sm text-primary">Admin</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              title="Refresh"
+              onClick={() => void loadData(adminKey)}
+              disabled={loading}
+            >
+              {loading
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <RefreshCw className="h-3.5 w-3.5" />}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </Button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex">
+          {(["leads", "clients"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${
+                tab === t
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t === "leads"
+                ? `Leads${leads.length ? ` (${leads.length})` : ""}`
+                : `Clients${clients.length ? ` (${clients.length})` : ""}`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Loading…
+          </div>
+        ) : (
+          <>
+            {tab === "leads" && (
+              <div className="bg-card border border-border rounded-2xl p-4 md:p-6">
+                <h2 className="font-semibold text-primary mb-4">Leads</h2>
+                <LeadsTable
+                  leads={leads}
+                  adminKey={adminKey}
+                  onStatusChange={handleStatusChange}
+                  onSendLink={setSelectedLead}
+                />
+              </div>
+            )}
+            {tab === "clients" && (
+              <div className="bg-card border border-border rounded-2xl p-4 md:p-6">
+                <h2 className="font-semibold text-primary mb-4">Clients</h2>
+                <ClientsTable clients={clients} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <SendOnboardingModal
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        adminKey={adminKey}
+        onSent={handleSent}
+      />
+    </div>
+  );
+}

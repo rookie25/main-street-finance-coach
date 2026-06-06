@@ -35,6 +35,7 @@ import AppExpenses from "./pages/app/AppExpenses";
 import AppReports from "./pages/app/AppReports";
 import AppTax from "./pages/app/AppTax";
 import AppChat from "./pages/app/AppChat";
+import AdminPanel from "./pages/admin/AdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,9 @@ const App = () => (
               </Route>
             </Route>
           </Route>
+
+          {/* Admin panel — standalone, key-gated (no Supabase auth required). */}
+          <Route path="/admin" element={<AdminPanel />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
