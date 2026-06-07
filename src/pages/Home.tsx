@@ -13,7 +13,7 @@ const problems = [
 
 const features = [
   { icon: Sun, title: "Daily Briefings", body: "Every morning, know exactly where your business stands. Revenue, expenses, anomalies, recommendations." },
-  { icon: Receipt, title: "Automated Bookkeeping", body: "WhatsApp a receipt. Email an invoice. Done. Every expense captured, categorized, and logged in real time." },
+  { icon: Receipt, title: "Automated Bookkeeping", body: "Email an invoice, upload a receipt. Done. Every expense captured, categorized, and logged in real time." },
   { icon: FileCheck2, title: "Tax Filing & Compliance", body: "Sales tax, quarterly estimates, payroll taxes — filed automatically. Never miss a deadline again." },
   { icon: Sparkles, title: "Monthly CPA Package", body: "Clean, accurate books delivered to your CPA on the 1st of every month. No back and forth. Just sign and file." },
 ];
@@ -46,7 +46,7 @@ export default function Home() {
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Button asChild variant="gold" size="lg">
-                <Link to="/how-it-works">See How It Works <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                <Link to="/contact">Get a Free Assessment <ArrowRight className="ml-1 h-4 w-4" /></Link>
               </Button>
               <Button asChild variant="outlineLight" size="lg">
                 <Link to="/cpa-partners">For CPA Partners</Link>
@@ -139,7 +139,7 @@ export default function Home() {
                   <div>
                     <div className="text-xs uppercase tracking-wider text-accent mb-3">After</div>
                     <ul className="space-y-2 text-primary-foreground">
-                      <li>• Daily briefings via WhatsApp</li>
+                      <li>• Daily briefings via in-app dashboard</li>
                       <li>• 94% automated bookkeeping accuracy</li>
                       <li>• <span className="text-accent font-semibold">$548/month saved</span></li>
                       <li>• Missed tax filing caught within 5 days</li>

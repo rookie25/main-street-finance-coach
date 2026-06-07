@@ -90,7 +90,7 @@ export default function DashboardMockup({ className }: { className?: string }) {
 
           {[
             { y: 60, label: "Square sale", val: "+$148", color: "hsl(147 56% 23%)" },
-            { y: 100, label: "Receipt · WhatsApp", val: "−$42", color: "hsl(0 0% 30%)" },
+            { y: 100, label: "Receipt · In-app", val: "−$42", color: "hsl(0 0% 30%)" },
             { y: 140, label: "Sales tax accrued", val: "$23", color: "hsl(28 64% 47%)" },
             { y: 180, label: "Vendor invoice", val: "−$310", color: "hsl(0 0% 30%)" },
           ].map((r) => (

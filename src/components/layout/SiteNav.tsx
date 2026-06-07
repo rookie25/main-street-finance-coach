@@ -52,6 +52,9 @@ export default function SiteNav() {
               {l.label}
             </NavLink>
           ))}
+          <Link to="/app/login" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
+            Sign in →
+          </Link>
           <Button asChild variant="brand" size="sm">
             <Link to="/contact">Get Started</Link>
           </Button>
@@ -74,6 +77,9 @@ export default function SiteNav() {
                 {l.label}
               </NavLink>
             ))}
+            <Link to="/app/login" className="text-base font-medium py-2 text-foreground/60 hover:text-foreground transition-colors">
+              Sign in →
+            </Link>
             <Button asChild variant="brand" className="mt-2">
               <Link to="/contact">Get Started</Link>
             </Button>

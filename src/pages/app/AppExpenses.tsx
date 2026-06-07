@@ -119,7 +119,7 @@ export default function AppExpenses() {
     try {
       const saved = await confirmReceipt({ raw_id: result.raw_id, vendor: editedVendor.trim(), amount: amtNum, date: editedDate, category: editedCategory || null });
       if (saved.status === "duplicate") {
-        toast.success("Already in your books ✅ — this receipt was previously logged via WhatsApp. No action needed.", { duration: 4000 });
+        toast.success("Already in your books ✅ — this receipt was previously logged. No action needed.", { duration: 4000 });
       } else {
         toast.success("Receipt saved.");
         qc.invalidateQueries({ queryKey: ["client", "expenses", month] });

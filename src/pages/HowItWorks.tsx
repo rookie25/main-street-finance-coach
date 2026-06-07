@@ -1,4 +1,4 @@
-import { ArrowRight, CreditCard, Building2, Mail, MessageCircle, Calculator, Users, Database, Brain, FileBarChart, Bell, Check } from "lucide-react";
+import { ArrowRight, CreditCard, Building2, Mail, Calculator, Users, Database, Brain, FileBarChart, Bell, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Reveal from "@/components/Reveal";
@@ -8,7 +8,6 @@ const sources = [
   { icon: CreditCard, name: "Square POS", desc: "Real-time sales sync" },
   { icon: Building2, name: "Plaid (bank)", desc: "Every transaction, daily" },
   { icon: Mail, name: "Gmail invoices", desc: "Inbox parsing & matching" },
-  { icon: MessageCircle, name: "WhatsApp receipts", desc: "Snap, send, captured" },
   { icon: Calculator, name: "QuickBooks", desc: "Two-way sync if needed" },
   { icon: Users, name: "Payroll systems", desc: "Gusto, Square Payroll, more" },
 ];
@@ -23,7 +22,7 @@ const automated = [
 ];
 
 const received = [
-  { time: "6:45 AM", title: "Daily WhatsApp briefing", body: "Yesterday's revenue, anomalies, what to know today." },
+  { time: "6:45 AM", title: "Daily morning briefing", body: "Yesterday's revenue, anomalies, what to know today." },
   { time: "Weekly", title: "P&L report", body: "Trends, top expenses, margin movement." },
   { time: "1st of month", title: "CPA package", body: "Clean books, mileage, balance sheet, ready to sign." },
   { time: "Always", title: "Compliance calendar alerts", body: "Filing deadlines pushed before they hurt." },
@@ -57,7 +56,7 @@ export default function HowItWorks() {
         <div className="container-prose">
           <Reveal>
             <div className="bg-card rounded-3xl border border-border shadow-soft p-8 md:p-12 grid md:grid-cols-3 gap-6 items-center">
-              <Step icon={Database} label="Data in" sub="Square · Bank · Email · WhatsApp" />
+              <Step icon={Database} label="Data in" sub="Square · Bank · Email" />
               <div className="hidden md:flex justify-center text-accent"><ArrowRight className="h-6 w-6" /></div>
               <Step icon={Brain} label="AI processing" sub="Capture · Categorize · Verify" tone="primary" />
               <div className="hidden md:col-start-2 md:row-start-2 md:flex justify-center text-accent"><ArrowRight className="h-6 w-6 rotate-90 md:rotate-0" /></div>

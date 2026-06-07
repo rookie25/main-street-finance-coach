@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -26,6 +26,7 @@ const Services    = lazy(() => import("./pages/Services"));
 const CpaPartners = lazy(() => import("./pages/CpaPartners"));
 const About       = lazy(() => import("./pages/About"));
 const Contact     = lazy(() => import("./pages/Contact"));
+const Privacy     = lazy(() => import("./pages/Privacy"));
 const Onboard     = lazy(() => import("./pages/Onboard"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
 
@@ -88,9 +89,11 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/pricing" element={<Navigate to="/services" replace />} />
               <Route path="/cpa-partners" element={<CpaPartners />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
             </Route>
             {/* Onboarding portal — standalone chrome, outside the marketing SiteLayout. */}
             <Route path="/onboard/:token" element={<Onboard />} />

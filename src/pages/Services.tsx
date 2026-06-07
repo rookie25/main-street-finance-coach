@@ -11,7 +11,7 @@ const services = [
     title: "AI Bookkeeping",
     summary: "Receipts, invoices, and bank lines — captured and categorized automatically.",
     points: [
-      "WhatsApp receipt capture",
+      "In-app receipt capture",
       "Gmail invoice processing",
       "Bank transaction categorization",
       "Real-time ledger",
