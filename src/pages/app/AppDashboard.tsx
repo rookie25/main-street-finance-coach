@@ -52,9 +52,16 @@ function MorningBriefingCard({ briefing }: { briefing: MorningBriefing }) {
         </div>
       </div>
       <div className="px-4 py-2 space-y-1.5">
-        {lines.map((line, i) => (
-          <p key={i} className="text-sm text-foreground leading-relaxed">{line}</p>
-        ))}
+        {lines.map((line, i) => {
+          const parts = line.split(/\*\*(.*?)\*\*/g);
+          return (
+            <p key={i} className="text-sm text-foreground leading-relaxed">
+              {parts.map((part, j) =>
+                j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+              )}
+            </p>
+          );
+        })}
       </div>
       <div className="px-4 pb-3 flex items-center justify-between gap-2">
         <span className="text-[10px] text-muted-foreground">Updated daily at 6:45am</span>
