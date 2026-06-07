@@ -1,7 +1,7 @@
 // Client Portal login (Component 4) — email/password or Google SSO.
 // Includes inline forgot-password flow matching the EA portal pattern.
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useClientAuth } from "@/hooks/useClientAuth";
@@ -25,6 +25,9 @@ export default function AppLogin() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/app";
+
+  const [searchParams]               = useSearchParams();
+  const wrongPortal                  = searchParams.get("error") === "wrong_portal";
 
   const [email,      setEmail]      = useState("");
   const [password,   setPassword]   = useState("");
@@ -81,6 +84,12 @@ export default function AppLogin() {
           <h1 className="font-display text-3xl font-semibold text-primary">Your Portal</h1>
           <p className="text-sm text-muted-foreground mt-2">Sign in to view Groundstack financials.</p>
         </div>
+
+        {wrongPortal && (
+          <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 text-center">
+            Please use the correct portal for your account.
+          </div>
+        )}
 
         {!showReset ? (
           <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-card space-y-4">
