@@ -36,6 +36,24 @@ export interface EAProfile {
   name: string | null;
 }
 
+export interface EAProfileData {
+  full_name:     string | null;
+  firm_name:     string | null;
+  email:         string;
+  member_since:  string | null;
+  clients: Array<{
+    business_name: string;
+    schema_name:   string;
+    is_active:     boolean;
+    assigned_at:   string | null;
+  }>;
+}
+
+export interface EAProfileUpdate {
+  full_name: string;
+  firm_name: string;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -136,6 +154,24 @@ async function post<T>(path: string, payload: unknown): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+async function patch<T>(path: string, payload: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method:  "PATCH",
+    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body:    JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<T>;
+}
+
+export const getProfile = () => get<EAProfileData>("/ea/profile");
+export const updateProfile = (data: EAProfileUpdate) =>
+  patch<{ ok: boolean; full_name: string; firm_name: string | null }>("/ea/profile", data);
 
 // ── Worksheet ─────────────────────────────────────────────────────────────────
 

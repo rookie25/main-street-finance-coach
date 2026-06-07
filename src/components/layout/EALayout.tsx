@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Loader2, AlertTriangle, MessageCircle } from "lucide-react";
+import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle } from "lucide-react";
 import { listClients, type EAClient } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
@@ -139,6 +139,20 @@ export default function EALayout() {
           <div className="px-2 pb-2 text-xs text-muted-foreground truncate">
             {user?.email}
           </div>
+          <NavLink
+            to="/ea/profile"
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors mb-1",
+                isActive
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-foreground hover:bg-secondary",
+              )
+            }
+          >
+            <UserCircle className="h-4 w-4 shrink-0" />
+            Profile
+          </NavLink>
           <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" /> Sign out
           </Button>

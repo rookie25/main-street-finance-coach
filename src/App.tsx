@@ -23,6 +23,7 @@ import EALogin from "./pages/ea/EALogin";
 import EASignup from "./pages/ea/EASignup";
 import EAHome from "./pages/ea/EAHome";
 import EAClient from "./pages/ea/EAClient";
+import EAProfile from "./pages/ea/EAProfile";
 import ResetPassword from "./pages/auth/ResetPassword";
 
 // Client Portal (Component 4) — standalone, auth-gated, mobile-first.
@@ -83,6 +84,7 @@ const App = () => (
               <Route element={<EALayout />}>
                 <Route path="/ea" element={<EAHome />} />
                 <Route path="/ea/clients/:schema" element={<EAClient />} />
+                <Route path="/ea/profile" element={<EAProfile />} />
               </Route>
             </Route>
           </Route>
