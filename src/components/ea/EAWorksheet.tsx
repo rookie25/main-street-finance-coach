@@ -5,7 +5,7 @@ import { Download, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   getWorksheet, saveAdjustment, resetAdjustments, worksheetExportUrl,
-  type PLRow, type BSItem, type WorksheetData,
+  type PLCategoryRow, type BSItem, type WorksheetData,
 } from "@/lib/eaApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,48 +64,177 @@ function EditCell({ value, field, rowId, editing, draft, onBegin, onDraft, onCom
 function PLSubTab({ pl, schema, period, onRefresh }: {
   pl: WorksheetData["pl"]; schema: string; period: string; onRefresh: () => void;
 }) {
-  const [editing, setEditing] = useState<EditState>(null);
-  const [draft,   setDraft]   = useState("");
-  const [saving,  setSaving]  = useState(false);
+  const [saving,    setSaving]   = useState(false);
+  const [addingSection, setAdding] = useState<"rev" | "cogs" | "opex" | null>(null);
+  const [newLabel,  setNewLabel]  = useState("");
+  const [newAmt,    setNewAmt]    = useState("");
+  const [editKey,   setEditKey]   = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
 
-  function beginEdit(rowId: string, field: string, val: string) {
-    setEditing({ rowId, field }); setDraft(val);
-  }
+  const adjCount = [...pl.revenue_lines, ...pl.cogs_categories, ...pl.opex_categories]
+    .filter((r) => r.is_adjusted).length + (pl.tax_collected.is_adjusted ? 1 : 0);
 
-  async function commitEdit(row: PLRow) {
-    if (!editing) return;
-    const origVal = String(row[editing.field as keyof PLRow] ?? "");
-    if (draft === origVal) { setEditing(null); return; }
+  async function saveAmount(row: PLCategoryRow) {
+    const n = parseFloat(editDraft);
+    if (isNaN(n) || n === row.amount) { setEditKey(null); return; }
     setSaving(true);
     try {
       await saveAdjustment(schema, {
-        period, sheet_type: "pl", expense_id: row.id,
-        field_changed: editing.field, original_value: origVal, new_value: draft,
+        period, sheet_type: "pl", expense_id: row.key,
+        field_changed: "category_total",
+        original_value: String(row.base_amount), new_value: String(n),
       });
       onRefresh();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to save");
-    } finally {
-      setSaving(false); setEditing(null);
-    }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to save"); }
+    finally { setSaving(false); setEditKey(null); }
   }
 
-  const adjCount = pl.rows.filter((r) => r.is_adjusted).length;
+  async function saveTaxAdjust() {
+    const n = parseFloat(editDraft);
+    if (isNaN(n)) { setEditKey(null); return; }
+    setSaving(true);
+    try {
+      await saveAdjustment(schema, {
+        period, sheet_type: "pl", expense_id: "rev_tax_collected",
+        field_changed: "category_total",
+        original_value: String(pl.tax_collected.amount), new_value: String(n),
+      });
+      onRefresh();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to save"); }
+    finally { setSaving(false); setEditKey(null); }
+  }
 
-  const sections: Array<{ label: string; type: string; subtotal: number }> = [
-    { label: "Cost of Goods Sold", type: "cogs", subtotal: pl.cogs_total },
-    { label: "Operating Expenses", type: "opex", subtotal: pl.opex_total },
-  ];
+  async function addLine(prefix: "rev" | "cogs" | "opex") {
+    if (!newLabel.trim() || !newAmt.trim()) return;
+    const n = parseFloat(newAmt);
+    if (isNaN(n)) { toast.error("Enter a valid amount"); return; }
+    setSaving(true);
+    try {
+      await saveAdjustment(schema, {
+        period, sheet_type: "pl",
+        expense_id: `${prefix}_ea_${Date.now()}`,
+        field_changed: "new_line", new_value: String(n), note: newLabel.trim(),
+      });
+      setNewLabel(""); setNewAmt(""); setAdding(null);
+      onRefresh();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed to add"); }
+    finally { setSaving(false); }
+  }
+
+  function AmountCell({ row }: { row: PLCategoryRow }) {
+    if (editKey === row.key) {
+      return (
+        <Input autoFocus value={editDraft}
+          onChange={(e) => setEditDraft(e.target.value)}
+          onBlur={() => saveAmount(row)}
+          onKeyDown={(e) => { if (e.key === "Enter") saveAmount(row); if (e.key === "Escape") setEditKey(null); }}
+          className="h-6 w-28 text-xs text-right py-0 px-1 ml-auto"
+        />
+      );
+    }
+    return (
+      <span className="cursor-text tabular-nums" title="Click to override"
+        onClick={() => { setEditKey(row.key); setEditDraft(String(row.amount)); }}>
+        ${fmt(row.amount)}
+      </span>
+    );
+  }
+
+  function AddLineRow({ prefix }: { prefix: "rev" | "cogs" | "opex" }) {
+    if (addingSection === prefix) {
+      return (
+        <tr className="border-t border-border bg-secondary/20">
+          <td className="px-3 py-1.5">
+            <Input autoFocus placeholder="Description" value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addLine(prefix);
+                if (e.key === "Escape") { setAdding(null); setNewLabel(""); setNewAmt(""); }
+              }}
+              className="h-6 text-xs py-0 px-1"
+            />
+          </td>
+          <td className="px-3 py-1.5">
+            <Input placeholder="0.00" value={newAmt}
+              onChange={(e) => setNewAmt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addLine(prefix);
+                if (e.key === "Escape") { setAdding(null); setNewAmt(""); setNewLabel(""); }
+              }}
+              className="h-6 w-28 text-xs text-right py-0 px-1 ml-auto"
+            />
+          </td>
+          <td className="px-2 py-1 flex gap-1">
+            <Button size="sm" className="h-5 text-[10px] px-2" onClick={() => addLine(prefix)}>Add</Button>
+            <Button size="sm" variant="ghost" className="h-5 text-[10px] px-1"
+              onClick={() => { setAdding(null); setNewLabel(""); setNewAmt(""); }}>✕</Button>
+          </td>
+        </tr>
+      );
+    }
+    return (
+      <tr className="border-t border-dashed border-border/40">
+        <td colSpan={3} className="px-3 py-1">
+          <button className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-1"
+            onClick={() => setAdding(prefix)}>
+            <span className="text-sm leading-none font-bold">+</span> Add line
+          </button>
+        </td>
+      </tr>
+    );
+  }
+
+  function SectionTable({ title, rows, prefix, subtotalLabel, subtotal }: {
+    title: string; rows: PLCategoryRow[];
+    prefix: "rev" | "cogs" | "opex"; subtotalLabel: string; subtotal: number;
+  }) {
+    return (
+      <div className="rounded-md border border-border overflow-hidden text-xs">
+        <div className="bg-primary/90 px-3 py-1.5 text-primary-foreground font-semibold uppercase tracking-wide text-[11px]">
+          {title}
+        </div>
+        <table className="w-full border-collapse">
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key} className={cn(
+                "border-t border-border",
+                row.is_adjusted ? "bg-amber-50" : "bg-card hover:bg-secondary/20",
+              )}>
+                <td className="px-3 py-1.5">
+                  <span className="flex items-center gap-1.5">
+                    {row.label}
+                    {row.is_adjusted && (
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[9px] px-1 py-0 h-4">edited</Badge>
+                    )}
+                  </span>
+                </td>
+                <td className="px-3 py-1.5 text-right"><AmountCell row={row} /></td>
+                <td className="w-4" />
+              </tr>
+            ))}
+            <AddLineRow prefix={prefix} />
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-border bg-secondary/60 font-semibold">
+              <td className="px-3 py-1.5">{subtotalLabel}</td>
+              <td className="px-3 py-1.5 text-right tabular-nums">${fmt(subtotal)}</td>
+              <td />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
       {/* Summary strip */}
       <div className="grid grid-cols-4 gap-2">
         {([
-          { label: "Revenue",      val: pl.revenue_total },
-          { label: "Gross Profit", val: pl.gross_profit  },
-          { label: "OpEx",         val: pl.opex_total    },
-          { label: "Net Income",   val: pl.net_income, colored: true },
+          { label: "Gross Revenue", val: pl.revenue_gross },
+          { label: "Gross Profit",  val: pl.gross_profit  },
+          { label: "OpEx",          val: pl.opex_total    },
+          { label: "Net Income",    val: pl.net_income, colored: true },
         ] as { label: string; val: number; colored?: boolean }[]).map(({ label, val, colored }) => (
           <div key={label} className="rounded-lg border border-border bg-card px-3 py-2">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
@@ -118,8 +247,7 @@ function PLSubTab({ pl, schema, period, onRefresh }: {
         ))}
       </div>
 
-      {/* Status strip */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 h-4">
         {adjCount > 0 && (
           <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200 text-[10px]">
             {adjCount} edited
@@ -128,89 +256,82 @@ function PLSubTab({ pl, schema, period, onRefresh }: {
         {saving && <><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /><span className="text-xs text-muted-foreground">Saving…</span></>}
       </div>
 
-      {/* Revenue — read-only summary line */}
+      {/* Revenue */}
       <div className="rounded-md border border-border overflow-hidden text-xs">
         <div className="bg-primary px-3 py-1.5 text-primary-foreground font-semibold uppercase tracking-wide text-[11px]">
           Revenue
         </div>
-        <div className="grid grid-cols-[1fr_auto] px-3 py-2 bg-card gap-4">
-          <span className="text-muted-foreground">Square Sales (gross)</span>
-          <span className="font-medium tabular-nums">${fmt(pl.revenue_total)}</span>
-        </div>
-        <div className="grid grid-cols-[1fr_auto] px-3 py-1.5 bg-muted/40 gap-4 border-t border-border font-semibold">
-          <span>Total Revenue</span>
-          <span className="tabular-nums">${fmt(pl.revenue_total)}</span>
-        </div>
+        <table className="w-full border-collapse">
+          <tbody>
+            {pl.revenue_lines.map((row) => (
+              <tr key={row.key} className={cn(
+                "border-t border-border",
+                row.is_adjusted ? "bg-amber-50" : "bg-card hover:bg-secondary/20",
+              )}>
+                <td className="px-3 py-1.5">
+                  <span className="flex items-center gap-1.5">
+                    {row.label}
+                    {row.is_adjusted && (
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[9px] px-1 py-0 h-4">edited</Badge>
+                    )}
+                  </span>
+                </td>
+                <td className="px-3 py-1.5 text-right"><AmountCell row={row} /></td>
+                <td className="w-4" />
+              </tr>
+            ))}
+            {/* Sales Tax Collected — editable deduction */}
+            <tr className={cn("border-t border-border", pl.tax_collected.is_adjusted ? "bg-amber-50" : "bg-card")}>
+              <td className="px-3 py-1.5 text-muted-foreground italic flex items-center gap-1.5">
+                Sales Tax Collected
+                {pl.tax_collected.is_adjusted && (
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[9px] px-1 py-0 h-4">edited</Badge>
+                )}
+              </td>
+              <td className="px-3 py-1.5 text-right text-muted-foreground italic">
+                {editKey === "rev_tax_collected" ? (
+                  <Input autoFocus value={editDraft}
+                    onChange={(e) => setEditDraft(e.target.value)}
+                    onBlur={saveTaxAdjust}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveTaxAdjust(); if (e.key === "Escape") setEditKey(null); }}
+                    className="h-6 w-28 text-xs text-right py-0 px-1 ml-auto"
+                  />
+                ) : (
+                  <span className="cursor-text tabular-nums" title="Click to override"
+                    onClick={() => { setEditKey("rev_tax_collected"); setEditDraft(String(pl.tax_collected.amount)); }}>
+                    (${fmt(pl.tax_collected.amount)})
+                  </span>
+                )}
+              </td>
+              <td className="w-4" />
+            </tr>
+            <AddLineRow prefix="rev" />
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-border bg-secondary/60 font-semibold">
+              <td className="px-3 py-1.5">Net Revenue</td>
+              <td className="px-3 py-1.5 text-right tabular-nums">${fmt(pl.net_revenue)}</td>
+              <td />
+            </tr>
+          </tfoot>
+        </table>
       </div>
 
-      {/* Expense sections */}
-      {sections.map(({ label, type, subtotal }) => {
-        const rows = pl.rows.filter((r) => r.expense_type === type);
-        if (!rows.length) return null;
-        return (
-          <div key={type} className="rounded-md border border-border overflow-hidden text-xs">
-            <div className="bg-primary/90 px-3 py-1.5 text-primary-foreground font-semibold uppercase tracking-wide text-[11px]">
-              {label}
-            </div>
-            <table className="w-full border-collapse">
-              <thead className="bg-secondary/60">
-                <tr>
-                  <th className="text-left px-2 py-1.5 font-medium text-muted-foreground w-24">Date</th>
-                  <th className="text-left px-2 py-1.5 font-medium text-muted-foreground">Vendor</th>
-                  <th className="text-left px-2 py-1.5 font-medium text-muted-foreground w-36">Category</th>
-                  <th className="text-right px-2 py-1.5 font-medium text-muted-foreground w-24">Amount</th>
-                  <th className="text-left px-2 py-1.5 font-medium text-muted-foreground w-32">Note</th>
-                  <th className="w-14" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id} className={cn(
-                    "border-t border-border transition-colors",
-                    row.is_adjusted ? "bg-amber-50" : "bg-card hover:bg-secondary/30",
-                  )}>
-                    <td className="px-2 py-1.5 text-muted-foreground">{row.date}</td>
-                    <td className="px-2 py-1.5">
-                      <EditCell value={row.vendor} field="vendor" rowId={row.id}
-                        editing={editing} draft={draft} onBegin={beginEdit}
-                        onDraft={setDraft} onCommit={() => commitEdit(row)} onCancel={() => setEditing(null)} />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <EditCell value={row.pl_category} field="pl_category" rowId={row.id}
-                        editing={editing} draft={draft} onBegin={beginEdit}
-                        onDraft={setDraft} onCommit={() => commitEdit(row)} onCancel={() => setEditing(null)} />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <EditCell value={row.amount} field="amount" rowId={row.id}
-                        editing={editing} draft={draft} numeric onBegin={beginEdit}
-                        onDraft={setDraft} onCommit={() => commitEdit(row)} onCancel={() => setEditing(null)} />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <EditCell value={row.note} field="note" rowId={row.id}
-                        editing={editing} draft={draft} onBegin={beginEdit}
-                        onDraft={setDraft} onCommit={() => commitEdit(row)} onCancel={() => setEditing(null)} />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      {row.is_adjusted && (
-                        <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[9px] px-1 py-0 h-4">
-                          edited
-                        </Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-border bg-secondary/60 font-semibold">
-                  <td colSpan={3} className="px-2 py-1.5">Subtotal — {label}</td>
-                  <td className="px-2 py-1.5 text-right tabular-nums">${fmt(subtotal)}</td>
-                  <td colSpan={2} />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        );
-      })}
+      {/* COGS */}
+      {pl.cogs_categories.length > 0 && (
+        <SectionTable title="Cost of Goods Sold" rows={pl.cogs_categories}
+          prefix="cogs" subtotalLabel="Total COGS" subtotal={pl.cogs_total} />
+      )}
+
+      {/* Gross Profit */}
+      <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 flex justify-between items-center font-semibold text-sm text-primary">
+        <span>Gross Profit</span>
+        <span className="tabular-nums">${fmt(pl.gross_profit)}</span>
+      </div>
+
+      {/* OpEx */}
+      <SectionTable title="Operating Expenses" rows={pl.opex_categories}
+        prefix="opex" subtotalLabel="Total Operating Expenses" subtotal={pl.opex_total} />
 
       {/* Net Income */}
       <div className={cn(

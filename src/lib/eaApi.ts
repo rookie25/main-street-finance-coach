@@ -139,16 +139,13 @@ async function post<T>(path: string, payload: unknown): Promise<T> {
 
 // ── Worksheet ─────────────────────────────────────────────────────────────────
 
-export interface PLRow {
-  id:           string;
-  date:         string;
-  vendor:       string;
-  pl_category:  string;
-  expense_type: string;
-  amount:       number;
-  note:         string;
-  is_adjusted:  boolean;
-  adjustments:  Record<string, { new_value: string; original_value: string; note: string; adj_id: string }>;
+export interface PLCategoryRow {
+  key:         string;
+  label:       string;
+  amount:      number;
+  base_amount: number;
+  is_adjusted: boolean;
+  adj_id:      string | null;
 }
 
 export interface BSItem {
@@ -163,12 +160,16 @@ export interface WorksheetData {
   schema: string;
   period: string;
   pl: {
-    rows:          PLRow[];
-    revenue_total: number;
-    cogs_total:    number;
-    opex_total:    number;
-    gross_profit:  number;
-    net_income:    number;
+    revenue_lines:   PLCategoryRow[];
+    tax_collected:   { amount: number; is_adjusted: boolean };
+    cogs_categories: PLCategoryRow[];
+    opex_categories: PLCategoryRow[];
+    revenue_gross:   number;
+    net_revenue:     number;
+    cogs_total:      number;
+    gross_profit:    number;
+    opex_total:      number;
+    net_income:      number;
   };
   bs: {
     assets:            { current: BSItem[]; fixed: BSItem[]; total_current: number; total_fixed: number; total: number };
