@@ -4,11 +4,14 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, FileBarChart2, Calculator, MessageCircle, MessageSquare, LogOut,
+  LayoutDashboard, Receipt, FileBarChart2, Calculator, MessageCircle, MessageSquare, LogOut, Bell,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { getNotifications } from "@/lib/clientApi";
+import NotificationsPanel from "@/components/client/NotificationsPanel";
 
 const NAV_ITEMS = [
   { to: "/app",           label: "Dashboard", icon: LayoutDashboard, end: true,  badge: false },
@@ -23,6 +26,15 @@ export default function ClientLayout() {
   const { user, signOut } = useClientAuth();
   const navigate = useNavigate();
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
+
+  const { data: notificationsData } = useQuery({
+    queryKey: ["client", "notifications"],
+    queryFn:  getNotifications,
+    staleTime: 5 * 60 * 1000,
+  });
+  const unreadNotifications = notificationsData?.unread_count ?? 0;
+  const notificationsList   = notificationsData?.notifications ?? [];
 
   useEffect(() => {
     let mounted = true;
@@ -66,14 +78,36 @@ export default function ClientLayout() {
             Groundstack Coffee
           </div>
         </div>
-        <button
-          onClick={handleSignOut}
-          title={`Sign out (${user?.email})`}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setPanelOpen((o) => !o)}
+            title="Notifications"
+            className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <Bell className="h-4 w-4" />
+            {unreadNotifications > 0 && (
+              <span
+                className="absolute top-1 right-1 h-2 w-2 rounded-full"
+                style={{ backgroundColor: "#C47A2C" }}
+              />
+            )}
+          </button>
+          <button
+            onClick={handleSignOut}
+            title={`Sign out (${user?.email})`}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </header>
+
+      {panelOpen && (
+        <NotificationsPanel
+          notifications={notificationsList}
+          onClose={() => setPanelOpen(false)}
+        />
+      )}
 
       {/* ── Scrollable main content ─────────────────────────────── */}
       <main className="flex-1 overflow-y-auto pb-20">

@@ -112,6 +112,19 @@ export interface ChatResponse {
   model: string;
 }
 
+export interface ClientNotification {
+  type:     "report_ready" | "tax_deadline" | "amex_past_due" | "low_balance";
+  severity: "urgent" | "warning" | "info";
+  title:    string;
+  body:     string;
+  meta:     Record<string, unknown>;
+}
+
+export interface NotificationsData {
+  notifications: ClientNotification[];
+  unread_count:  number;
+}
+
 // ── Error class ───────────────────────────────────────────────────────────────
 
 export class ApiError extends Error {
@@ -170,6 +183,9 @@ export const getReports = (month?: string) =>
 
 export const getTax = () =>
   get<TaxData>("/client/tax");
+
+export const getNotifications = () =>
+  get<NotificationsData>("/client/notifications");
 
 export const sendChat = (
   messages: { role: "user" | "assistant"; content: string }[],
