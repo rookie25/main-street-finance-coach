@@ -173,6 +173,15 @@ export const getProfile = () => get<EAProfileData>("/ea/profile");
 export const updateProfile = (data: EAProfileUpdate) =>
   patch<{ ok: boolean; full_name: string; firm_name: string | null }>("/ea/profile", data);
 
+export interface ClientSummary {
+  schema_name:  string;
+  net_revenue:  number | null;
+  net_income:   number | null;
+  last_sync:    string | null;
+}
+
+export const getClientsSummary = () => get<ClientSummary[]>("/ea/clients/summary");
+
 // ── Worksheet ─────────────────────────────────────────────────────────────────
 
 export interface PLCategoryRow {

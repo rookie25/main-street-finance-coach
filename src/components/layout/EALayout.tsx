@@ -1,15 +1,25 @@
 // EA Portal shell (Component 3) — a sidebar of clients with active/pending
 // status dots beside an outlet for the per-client view. Deliberately separate
 // from the marketing SiteLayout: its own chrome, no SiteNav/SiteFooter.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle } from "lucide-react";
-import { listClients, type EAClient } from "@/lib/eaApi";
+import { listClients, getClientsSummary, type EAClient, type ClientSummary } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
+function fmtMoney(n: number | null): string {
+  if (n === null) return "";
+  return "$" + Math.round(n).toLocaleString("en-US");
+}
+
+function fmtSyncDate(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 function StatusDot({ status }: { status: EAClient["status"] }) {
   // active → brand green; pending → gold. Title gives the raw label on hover.
@@ -33,6 +43,18 @@ export default function EALayout() {
     queryKey: ["ea", "clients"],
     queryFn: listClients,
   });
+
+  const { data: summaries } = useQuery({
+    queryKey: ["ea", "clients-summary"],
+    queryFn: getClientsSummary,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const summaryMap = useMemo(() => {
+    const map: Record<string, ClientSummary> = {};
+    for (const s of summaries ?? []) map[s.schema_name] = s;
+    return map;
+  }, [summaries]);
 
   useEffect(() => {
     let mounted = true;
@@ -116,18 +138,40 @@ export default function EALayout() {
                   }
                 >
                   <StatusDot status={c.status} />
-                  <span className="truncate flex-1">{c.business_name}</span>
-                  {msgCounts[c.client_schema] > 0 && (
-                    <span className="flex items-center gap-0.5 shrink-0 text-[9px] font-bold text-primary/70">
-                      <MessageCircle className="h-3 w-3" />
-                      {msgCounts[c.client_schema]}
-                    </span>
-                  )}
-                  {c.pending_count > 0 && (
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[9px] font-bold shrink-0">
-                      {c.pending_count}
-                    </span>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="truncate flex-1">{c.business_name}</span>
+                      {msgCounts[c.client_schema] > 0 && (
+                        <span className="flex items-center gap-0.5 shrink-0 text-[9px] font-bold text-primary/70">
+                          <MessageCircle className="h-3 w-3" />
+                          {msgCounts[c.client_schema]}
+                        </span>
+                      )}
+                      {c.pending_count > 0 && (
+                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[9px] font-bold shrink-0">
+                          {c.pending_count}
+                        </span>
+                      )}
+                    </div>
+                    {(() => {
+                      const s = summaryMap[c.client_schema];
+                      if (!s || (s.net_revenue === null && s.net_income === null && !s.last_sync)) return null;
+                      return (
+                        <div className="mt-0.5 text-xs text-muted-foreground leading-snug">
+                          {(s.net_revenue !== null || s.net_income !== null) && (
+                            <span>
+                              {s.net_revenue !== null && `Revenue: ${fmtMoney(s.net_revenue)}`}
+                              {s.net_revenue !== null && s.net_income !== null && "  "}
+                              {s.net_income !== null && `NI: ${fmtMoney(s.net_income)}`}
+                            </span>
+                          )}
+                          {s.last_sync && (
+                            <span className="block">Synced: {fmtSyncDate(s.last_sync)}</span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </NavLink>
               </li>
             ))}
