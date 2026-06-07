@@ -136,3 +136,84 @@ async function post<T>(path: string, payload: unknown): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+// ── Worksheet ─────────────────────────────────────────────────────────────────
+
+export interface PLRow {
+  id:           string;
+  date:         string;
+  vendor:       string;
+  pl_category:  string;
+  expense_type: string;
+  amount:       number;
+  note:         string;
+  is_adjusted:  boolean;
+  adjustments:  Record<string, { new_value: string; original_value: string; note: string; adj_id: string }>;
+}
+
+export interface BSItem {
+  id:          string;
+  label:       string;
+  amount:      number;
+  note:        string;
+  is_adjusted: boolean;
+}
+
+export interface WorksheetData {
+  schema: string;
+  period: string;
+  pl: {
+    rows:          PLRow[];
+    revenue_total: number;
+    cogs_total:    number;
+    opex_total:    number;
+    gross_profit:  number;
+    net_income:    number;
+  };
+  bs: {
+    assets:            { current: BSItem[]; fixed: BSItem[]; total_current: number; total_fixed: number; total: number };
+    liabilities:       { items: BSItem[]; total: number };
+    equity:            { items: BSItem[]; total: number };
+    total_liab_equity: number;
+    balanced:          boolean;
+  };
+  adjustments: unknown[];
+}
+
+export interface AdjustPayload {
+  period:         string;
+  sheet_type:     "pl" | "bs";
+  expense_id?:    string | null;
+  field_changed:  string;
+  original_value?: string;
+  new_value:      string;
+  note?:          string;
+}
+
+export const getWorksheet = (schema: string, month: string) =>
+  get<WorksheetData>(`/ea/client/${encodeURIComponent(schema)}/worksheet?month=${encodeURIComponent(month)}`);
+
+export async function saveAdjustment(schema: string, payload: AdjustPayload): Promise<unknown> {
+  const res = await fetch(`${BASE}/ea/client/${encodeURIComponent(schema)}/worksheet/adjust`, {
+    method:  "POST",
+    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body:    JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let detail = `Save failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json();
+}
+
+export async function resetAdjustments(schema: string, month: string): Promise<void> {
+  const res = await fetch(
+    `${BASE}/ea/client/${encodeURIComponent(schema)}/worksheet/adjustments?month=${encodeURIComponent(month)}`,
+    { method: "DELETE", headers: await authHeader() },
+  );
+  if (!res.ok) throw new ApiError(`Reset failed (${res.status})`, res.status);
+}
+
+export const worksheetExportUrl = (schema: string, month: string) =>
+  `${BASE}/ea/client/${encodeURIComponent(schema)}/worksheet/export?month=${encodeURIComponent(month)}`;

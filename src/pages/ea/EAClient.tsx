@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EAMessagesCard from "@/components/ea/EAMessagesCard";
+import EAWorksheet from "@/components/ea/EAWorksheet";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -149,6 +150,7 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
           <TabsList>
             <TabsTrigger value="pnl">Profit &amp; Loss</TabsTrigger>
             <TabsTrigger value="bs">Balance Sheet</TabsTrigger>
+            <TabsTrigger value="worksheet">Worksheet</TabsTrigger>
           </TabsList>
           <Button asChild variant="outline" size="sm">
             <a href={pnlDownload}>
@@ -181,6 +183,10 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
               />
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="worksheet" className="p-4">
+          <EAWorksheet schema={schema} month={month} />
         </TabsContent>
       </Tabs>
     </Card>
