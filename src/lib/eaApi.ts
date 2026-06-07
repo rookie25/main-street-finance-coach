@@ -182,6 +182,19 @@ export interface ClientSummary {
 
 export const getClientsSummary = () => get<ClientSummary[]>("/ea/clients/summary");
 
+export interface ClientAlert {
+  type:  "report" | "tax";
+  label: string;
+  color: "green" | "amber" | "red";
+}
+
+export interface ClientAlertsData {
+  schema_name: string;
+  alerts:      ClientAlert[];
+}
+
+export const getClientsAlerts = () => get<ClientAlertsData[]>("/ea/clients/alerts");
+
 // ── Worksheet ─────────────────────────────────────────────────────────────────
 
 export interface PLCategoryRow {

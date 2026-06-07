@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle } from "lucide-react";
-import { listClients, getClientsSummary, type EAClient, type ClientSummary } from "@/lib/eaApi";
+import { listClients, getClientsSummary, getClientsAlerts, type EAClient, type ClientSummary, type ClientAlertsData } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -50,11 +50,23 @@ export default function EALayout() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: clientsAlerts } = useQuery({
+    queryKey: ["ea", "clients-alerts"],
+    queryFn: getClientsAlerts,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const summaryMap = useMemo(() => {
     const map: Record<string, ClientSummary> = {};
     for (const s of summaries ?? []) map[s.schema_name] = s;
     return map;
   }, [summaries]);
+
+  const alertsMap = useMemo(() => {
+    const map: Record<string, ClientAlertsData["alerts"]> = {};
+    for (const a of clientsAlerts ?? []) map[a.schema_name] = a.alerts;
+    return map;
+  }, [clientsAlerts]);
 
   useEffect(() => {
     let mounted = true;
@@ -168,6 +180,31 @@ export default function EALayout() {
                           {s.last_sync && (
                             <span className="block">Synced: {fmtSyncDate(s.last_sync)}</span>
                           )}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const pills = alertsMap[c.client_schema];
+                      if (!pills?.length) return null;
+                      return (
+                        <div className="flex flex-wrap gap-0.5 mt-0.5">
+                          {pills.map((alert) => (
+                            <span
+                              key={alert.type}
+                              className={cn(
+                                "inline-flex rounded-full text-[10px] font-medium px-1.5 py-0.5",
+                                alert.color === "green" && "bg-green-100 text-green-700",
+                                alert.color === "amber" && "bg-amber-100 text-amber-700",
+                                alert.color === "red"   && "bg-red-100 text-red-700",
+                              )}
+                            >
+                              {alert.type === "report"
+                                ? `📄 ${alert.label}`
+                                : alert.color === "red"
+                                  ? `🔴 ${alert.label}`
+                                  : `⚠ ${alert.label}`}
+                            </span>
+                          ))}
                         </div>
                       );
                     })()}
