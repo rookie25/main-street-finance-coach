@@ -202,7 +202,7 @@ export default function EALayout() {
                                 ? `📄 ${alert.label}`
                                 : alert.color === "red"
                                   ? `🔴 ${alert.label}`
-                                  : `⚠ ${alert.label}`}
+                                  : `⚠️ ${alert.label}`}
                             </span>
                           ))}
                         </div>

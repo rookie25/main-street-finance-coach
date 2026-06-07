@@ -5,9 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, Info, Loader2, RefreshCw,
 } from "lucide-react";
-import { getDashboard, getMorningBriefing, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
+import { getDashboard, getMorningBriefing, getMe, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function fmt(n: number) {
@@ -24,17 +23,18 @@ function monthLabel(m: string) {
 }
 
 function currentMonth() {
-  return new Date().toISOString().slice(0, 7);
+  // Use PT-aware date so the default month stays correct up until midnight in Pacific time.
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }).slice(0, 7);
 }
 
 function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function MorningBriefingCard({ briefing }: { briefing: MorningBriefing }) {
+function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; name?: string }) {
   const stale  = daysSince(briefing.created_at);
   const today  = new Date().toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric",
+    weekday: "long", month: "long", day: "numeric", timeZone: "America/Los_Angeles",
   });
   const lines  = briefing.content.split("\n").filter((l) => l.trim());
 
@@ -46,7 +46,7 @@ function MorningBriefingCard({ briefing }: { briefing: MorningBriefing }) {
       <div className="px-4 pt-4 pb-1">
         <div className="flex items-baseline justify-between gap-2 flex-wrap">
           <span className="font-display font-semibold text-primary text-base">
-            ☀️ Good Morning, Mark
+            ☀️ Good Morning{name ? `, ${name}` : ""}
           </span>
           <span className="text-xs text-muted-foreground shrink-0">{today}</span>
         </div>
@@ -104,6 +104,13 @@ export default function AppDashboard() {
     staleTime: 30 * 60 * 1000,
   });
 
+  const { data: meData } = useQuery({
+    queryKey: ["client", "me"],
+    queryFn:  getMe,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const firstName = meData?.full_name?.split(" ")[0];
   const pnl  = data?.pnl;
   const net  = pnl ? pnl.net_income : 0;
 
@@ -132,12 +139,12 @@ export default function AppDashboard() {
       </div>
 
       {/* ── Morning briefing ───────────────────────────────────── */}
-      {morningBriefing && <MorningBriefingCard briefing={morningBriefing} />}
+      {morningBriefing && <MorningBriefingCard briefing={morningBriefing} name={firstName} />}
 
       {/* ── Alerts ─────────────────────────────────────────────── */}
       {data?.alerts && data.alerts.length > 0 && (
         <div className="space-y-2">
-          {data.alerts.map((a, i) => <AlertBadge key={i} alert={a} />)}
+          {data.alerts.map((a, i) => <AlertBadge key={a.type ?? i} alert={a} />)}
         </div>
       )}
 
@@ -243,26 +250,6 @@ export default function AppDashboard() {
           )}
         </CardContent>
       </Card>
-
-      {/* ── Morning briefing ───────────────────────────────────── */}
-      {(isLoading || data?.briefing) && (
-        <Card className="border-accent/30 bg-accent/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-accent">
-              {data?.briefing?.title ?? "Monthly Briefing"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-4 w-full" />)}</div>
-            ) : data?.briefing ? (
-              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                {data.briefing.body}
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

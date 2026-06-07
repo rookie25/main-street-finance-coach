@@ -1,7 +1,7 @@
 // Client Portal login (Component 4) — email/password or Google SSO.
 // Includes inline forgot-password flow matching the EA portal pattern.
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useClientAuth } from "@/hooks/useClientAuth";
@@ -22,7 +22,6 @@ function GoogleIcon() {
 
 export default function AppLogin() {
   const { session, loading, signIn, signInWithGoogle, resetPassword } = useClientAuth();
-  const navigate  = useNavigate();
   const location  = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/app";
 
@@ -47,7 +46,7 @@ export default function AppLogin() {
     setSubmitting(true);
     try {
       await signIn(email.trim(), password);
-      navigate(from, { replace: true });
+      // Session watcher (<Navigate> above) handles the redirect — no second navigate() here.
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign-in failed. Check your credentials.");
     } finally {

@@ -222,7 +222,7 @@ export default function AppChat() {
 
       {/* ── Input area ─────────────────────────────────────────── */}
       <div className="border-t border-border bg-background px-4 py-3">
-        {messages.length > 0 && (
+        {messages.filter((m) => m.role !== "system").length > 0 && (
           <button
             onClick={() => setMessages([])}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-2 transition-colors"

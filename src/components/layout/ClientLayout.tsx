@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { getNotifications } from "@/lib/clientApi";
+import { getNotifications, getMe } from "@/lib/clientApi";
 import NotificationsPanel from "@/components/client/NotificationsPanel";
 
 const NAV_ITEMS = [
@@ -32,6 +32,12 @@ export default function ClientLayout() {
     queryKey: ["client", "notifications"],
     queryFn:  getNotifications,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: meData } = useQuery({
+    queryKey: ["client", "me"],
+    queryFn:  getMe,
+    staleTime: 10 * 60 * 1000,
   });
   const unreadNotifications = notificationsData?.unread_count ?? 0;
   const notificationsList   = notificationsData?.notifications ?? [];
@@ -75,7 +81,7 @@ export default function ClientLayout() {
             Desired Labs
           </div>
           <div className="font-display text-base font-semibold text-primary leading-tight">
-            Groundstack Coffee
+            {meData?.business_name ?? "Groundstack Coffee"}
           </div>
         </div>
         <div className="flex items-center gap-1">
