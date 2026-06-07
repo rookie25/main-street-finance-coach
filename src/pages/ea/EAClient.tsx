@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import EAMessagesCard from "@/components/ea/EAMessagesCard";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -102,6 +103,7 @@ export default function EAClient() {
         <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-6">
           <ReportViewer schema={schema} month={month} />
           <div className="space-y-6">
+            <EAMessagesCard schema={schema} />
             <PendingAdjustmentsCard schema={schema} qc={qc} />
             <ApprovalCard schema={schema} month={month} qc={qc} />
             <NotesCard schema={schema} month={month} qc={qc} />

@@ -1,24 +1,53 @@
 // Client Portal shell (Component 4) — mobile-first layout for Mark (iPhone).
 // Header at top, scrollable content in the middle, bottom navigation tab bar.
 // Deliberately separate from SiteLayout and EALayout.
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, FileBarChart2, Calculator, MessageSquare, LogOut,
+  LayoutDashboard, Receipt, FileBarChart2, Calculator, MessageCircle, MessageSquare, LogOut,
 } from "lucide-react";
 import { useClientAuth } from "@/hooks/useClientAuth";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { to: "/app",          label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/app/expenses", label: "Expenses",  icon: Receipt          },
-  { to: "/app/reports",  label: "Reports",   icon: FileBarChart2    },
-  { to: "/app/tax",      label: "Tax",       icon: Calculator       },
-  { to: "/app/chat",     label: "Ask AI",    icon: MessageSquare    },
+  { to: "/app",           label: "Dashboard", icon: LayoutDashboard, end: true,  badge: false },
+  { to: "/app/expenses",  label: "Expenses",  icon: Receipt,                      badge: false },
+  { to: "/app/reports",   label: "Reports",   icon: FileBarChart2,               badge: false },
+  { to: "/app/tax",       label: "Tax",       icon: Calculator,                  badge: false },
+  { to: "/app/messages",  label: "Messages",  icon: MessageCircle,               badge: true  },
+  { to: "/app/chat",      label: "Ask AI",    icon: MessageSquare,               badge: false },
 ] as const;
 
 export default function ClientLayout() {
   const { user, signOut } = useClientAuth();
   const navigate = useNavigate();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchUnread() {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("sender_role", "ea")
+        .is("read_at", null);
+      if (mounted) setUnreadMessages(count ?? 0);
+    }
+    fetchUnread();
+
+    const channel = supabase
+      .channel("client-messages-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   async function handleSignOut() {
     await signOut();
@@ -54,7 +83,7 @@ export default function ClientLayout() {
       {/* ── Bottom navigation tab bar ───────────────────────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 bg-card border-t border-border">
         <ul className="flex">
-          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+          {NAV_ITEMS.map(({ to, label, icon: Icon, end, badge }) => (
             <li key={to} className="flex-1">
               <NavLink
                 to={to}
@@ -70,7 +99,14 @@ export default function ClientLayout() {
               >
                 {({ isActive }) => (
                   <>
-                    <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                    <span className="relative">
+                      <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                      {badge && unreadMessages > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-accent-foreground">
+                          {unreadMessages > 9 ? "9+" : unreadMessages}
+                        </span>
+                      )}
+                    </span>
                     {label}
                   </>
                 )}

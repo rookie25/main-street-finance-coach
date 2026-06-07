@@ -1,11 +1,13 @@
 // EA Portal shell (Component 3) — a sidebar of clients with active/pending
 // status dots beside an outlet for the per-client view. Deliberately separate
 // from the marketing SiteLayout: its own chrome, no SiteNav/SiteFooter.
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Loader2, AlertTriangle } from "lucide-react";
+import { LogOut, Loader2, AlertTriangle, MessageCircle } from "lucide-react";
 import { listClients, type EAClient } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -25,11 +27,43 @@ function StatusDot({ status }: { status: EAClient["status"] }) {
 export default function EALayout() {
   const { user, signOut } = useEAAuth();
   const navigate = useNavigate();
+  const [msgCounts, setMsgCounts] = useState<Record<string, number>>({});
 
   const { data: clients, isLoading, isError, error } = useQuery({
     queryKey: ["ea", "clients"],
     queryFn: listClients,
   });
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchUnread() {
+      const { data } = await supabase
+        .from("messages")
+        .select("client_schema")
+        .eq("sender_role", "client")
+        .is("read_at", null);
+      if (!mounted || !data) return;
+      const counts: Record<string, number> = {};
+      for (const row of data) {
+        const s = row.client_schema as string;
+        counts[s] = (counts[s] ?? 0) + 1;
+      }
+      setMsgCounts(counts);
+    }
+    fetchUnread();
+
+    const channel = supabase
+      .channel("ea-messages-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   async function handleSignOut() {
     await signOut();
@@ -83,6 +117,12 @@ export default function EALayout() {
                 >
                   <StatusDot status={c.status} />
                   <span className="truncate flex-1">{c.business_name}</span>
+                  {msgCounts[c.client_schema] > 0 && (
+                    <span className="flex items-center gap-0.5 shrink-0 text-[9px] font-bold text-primary/70">
+                      <MessageCircle className="h-3 w-3" />
+                      {msgCounts[c.client_schema]}
+                    </span>
+                  )}
                   {c.pending_count > 0 && (
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[9px] font-bold shrink-0">
                       {c.pending_count}

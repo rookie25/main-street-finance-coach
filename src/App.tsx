@@ -35,6 +35,7 @@ import AppExpenses from "./pages/app/AppExpenses";
 import AppReports from "./pages/app/AppReports";
 import AppTax from "./pages/app/AppTax";
 import AppChat from "./pages/app/AppChat";
+import AppMessages from "./pages/app/AppMessages";
 import AdminPanel from "./pages/admin/AdminPanel";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ const App = () => (
                 <Route path="/app/expenses" element={<AppExpenses />} />
                 <Route path="/app/reports"  element={<AppReports />} />
                 <Route path="/app/tax"      element={<AppTax />} />
+                <Route path="/app/messages" element={<AppMessages />} />
                 <Route path="/app/chat"     element={<AppChat />} />
               </Route>
             </Route>
