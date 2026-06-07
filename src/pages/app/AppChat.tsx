@@ -3,14 +3,15 @@
 // financial data into Claude's system prompt. History is session-only.
 import { useEffect, useRef, useState } from "react";
 import { Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { sendChat } from "@/lib/clientApi";
+import { sendChat, getReports } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -20,6 +21,11 @@ const STARTER_QUESTIONS = [
   "Am I on track compared to last month?",
   "What are my biggest expense categories?",
 ];
+
+function fmtMonth(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
 
 function TypingIndicator() {
   return (
@@ -43,27 +49,60 @@ function TypingIndicator() {
 }
 
 export default function AppChat() {
-  const [messages,  setMessages]  = useState<Message[]>([]);
-  const [input,     setInput]     = useState("");
-  const [loading,   setLoading]   = useState(false);
+  const [messages,      setMessages]      = useState<Message[]>([]);
+  const [input,         setInput]         = useState("");
+  const [loading,       setLoading]       = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
+
+  const { data: reportsData, isLoading: monthsLoading } = useQuery({
+    queryKey: ["client", "reports"],
+    queryFn: () => getReports(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const months = reportsData?.available_months ?? [];
+
+  // Default to most recent month once data loads
+  useEffect(() => {
+    if (months.length > 0 && !selectedMonth) {
+      setSelectedMonth(months[0]);
+    }
+  }, [months, selectedMonth]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  function handleMonthChange(month: string) {
+    setSelectedMonth(month);
+    setMessages(prev => [
+      ...prev,
+      { role: "system", content: `Switched to ${fmtMonth(month)} →` },
+    ]);
+  }
+
   async function submit(text: string) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
+    // Visible message — original text only
     const nextMessages: Message[] = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
 
     try {
-      const resp = await sendChat(nextMessages);
+      // API payload: strip system separators and prepend month context to the last user message
+      const apiMessages = nextMessages
+        .filter(m => m.role !== "system")
+        .map((m, i, arr) =>
+          m.role === "user" && i === arr.length - 1 && selectedMonth
+            ? { ...m, content: `[Context: User is asking about ${fmtMonth(selectedMonth)}] ${m.content}` }
+            : m,
+        );
+      const resp = await sendChat(apiMessages);
       setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong. Try again.");
@@ -118,34 +157,68 @@ export default function AppChat() {
         )}
 
         {/* Messages */}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={cn("flex items-end gap-2", m.role === "user" ? "justify-end" : "justify-start")}
-          >
-            {m.role === "assistant" && (
-              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
+        {messages.map((m, i) => {
+          if (m.role === "system") {
+            return (
+              <div key={i} className="flex items-center justify-center py-1">
+                <span className="text-xs text-muted-foreground italic">{m.content}</span>
               </div>
-            )}
+            );
+          }
+          return (
             <div
-              className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
-                m.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-card border border-border text-foreground rounded-bl-sm",
-              )}
+              key={i}
+              className={cn("flex items-end gap-2", m.role === "user" ? "justify-end" : "justify-start")}
             >
-              {m.content}
+              {m.role === "assistant" && (
+                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                </div>
+              )}
+              <div
+                className={cn(
+                  "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+                  m.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                    : "bg-card border border-border text-foreground rounded-bl-sm",
+                )}
+              >
+                {m.content}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Typing indicator */}
         {loading && <TypingIndicator />}
 
         <div ref={bottomRef} />
       </div>
+
+      {/* ── Month picker ───────────────────────────────────────── */}
+      {(monthsLoading || months.length > 0) && (
+        <div className="px-4 py-2 border-t border-border bg-background flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground shrink-0">Asking about:</span>
+          {monthsLoading ? (
+            <select
+              disabled
+              className="text-sm border border-border rounded-lg px-3 py-1.5 bg-background text-muted-foreground flex-1 min-w-0"
+            >
+              <option>Loading months…</option>
+            </select>
+          ) : (
+            <select
+              value={selectedMonth ?? ""}
+              onChange={(e) => handleMonthChange(e.target.value)}
+              className="text-sm border border-border rounded-lg px-3 py-1.5 bg-background flex-1 min-w-0"
+            >
+              {months.map((m) => (
+                <option key={m} value={m}>{fmtMonth(m)}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       {/* ── Input area ─────────────────────────────────────────── */}
       <div className="border-t border-border bg-background px-4 py-3">
