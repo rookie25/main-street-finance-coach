@@ -193,6 +193,15 @@ export const sendChat = (
 ) =>
   post<ChatResponse>("/client/chat", { messages, month });
 
+export interface MorningBriefing {
+  content:    string;
+  data:       Record<string, unknown> | null;
+  created_at: string;
+}
+
+export const getMorningBriefing = () =>
+  get<MorningBriefing | null>("/client/morning-briefing");
+
 // Append &download= to a signed URL so the browser prompts a file download.
 export const asDownloadUrl = (signedUrl: string, filename: string) =>
   `${signedUrl}&download=${encodeURIComponent(filename)}`;

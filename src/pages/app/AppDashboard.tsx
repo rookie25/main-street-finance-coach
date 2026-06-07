@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, Info, Loader2, RefreshCw,
 } from "lucide-react";
-import { getDashboard, type DashboardAlert } from "@/lib/clientApi";
+import { getDashboard, getMorningBriefing, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +25,47 @@ function monthLabel(m: string) {
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
+}
+
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function MorningBriefingCard({ briefing }: { briefing: MorningBriefing }) {
+  const stale  = daysSince(briefing.created_at);
+  const today  = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+  });
+  const lines  = briefing.content.split("\n").filter((l) => l.trim());
+
+  return (
+    <div
+      className="rounded-xl bg-amber-50 border border-amber-100 border-l-4 overflow-hidden"
+      style={{ borderLeftColor: "#C47A2C" }}
+    >
+      <div className="px-4 pt-4 pb-1">
+        <div className="flex items-baseline justify-between gap-2 flex-wrap">
+          <span className="font-display font-semibold text-primary text-base">
+            ☀️ Good Morning, Mark
+          </span>
+          <span className="text-xs text-muted-foreground shrink-0">{today}</span>
+        </div>
+      </div>
+      <div className="px-4 py-2 space-y-1.5">
+        {lines.map((line, i) => (
+          <p key={i} className="text-sm text-foreground leading-relaxed">{line}</p>
+        ))}
+      </div>
+      <div className="px-4 pb-3 flex items-center justify-between gap-2">
+        <span className="text-[10px] text-muted-foreground">Updated daily at 6:45am</span>
+        {stale >= 2 && (
+          <span className="text-[10px] text-muted-foreground italic">
+            Last updated {stale} day{stale !== 1 ? "s" : ""} ago
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AlertBadge({ alert }: { alert: DashboardAlert }) {
@@ -48,6 +89,12 @@ export default function AppDashboard() {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["client", "dashboard", month],
     queryFn:  () => getDashboard(month),
+  });
+
+  const { data: morningBriefing } = useQuery({
+    queryKey: ["client", "morning-briefing"],
+    queryFn:  getMorningBriefing,
+    staleTime: 30 * 60 * 1000,
   });
 
   const pnl  = data?.pnl;
@@ -76,6 +123,9 @@ export default function AppDashboard() {
           </button>
         </div>
       </div>
+
+      {/* ── Morning briefing ───────────────────────────────────── */}
+      {morningBriefing && <MorningBriefingCard briefing={morningBriefing} />}
 
       {/* ── Alerts ─────────────────────────────────────────────── */}
       {data?.alerts && data.alerts.length > 0 && (
