@@ -1,13 +1,14 @@
 // Client Portal — Dashboard (Component 4).
-// P&L summary card, bank balance card, top 5 expenses, alerts, morning briefing.
+// Two-column layout: left = briefing + P&L, right = stat hero cards.
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  TrendingUp, TrendingDown, Minus, AlertTriangle, Info, Loader2, RefreshCw,
+  TrendingUp, TrendingDown, Minus, AlertTriangle, Info, RefreshCw, Sun,
 } from "lucide-react";
 import { getDashboard, getMorningBriefing, getMe, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// ── formatters (unchanged) ────────────────────────────────────────────────────
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -31,46 +32,67 @@ function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
 }
 
+// ── Briefing card ─────────────────────────────────────────────────────────────
+
 function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; name?: string }) {
-  const stale  = daysSince(briefing.created_at);
-  const today  = new Date().toLocaleDateString("en-US", {
+  const stale = daysSince(briefing.created_at);
+  const today = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", timeZone: "America/Los_Angeles",
   });
-  const lines  = briefing.content.split("\n").filter((l) => l.trim());
+  const lines = briefing.content.split("\n").filter((l) => l.trim());
+  // Last line = actionable tip → indigo
+  const tipLine  = lines.length > 1 ? lines[lines.length - 1] : null;
+  const bodyLines = tipLine ? lines.slice(0, -1) : lines;
 
   return (
     <div
-      className="rounded-xl overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.03))",
-        border: "1px solid rgba(99,102,241,0.15)",
-        borderLeft: "3px solid #6366F1",
-      }}
+      className="bg-white overflow-hidden"
+      style={{ border: "1px solid #E2E8F0", borderLeft: "3px solid #6366F1", borderRadius: "0 12px 12px 0" }}
     >
-      <div className="px-4 pt-4 pb-1">
-        <div className="flex items-baseline justify-between gap-2 flex-wrap">
-          <span className="font-display font-semibold text-primary text-base">
-            ☀️ Good Morning{name ? `, ${name}` : ""}
+      {/* Header row */}
+      <div className="px-4 pt-4 pb-2 flex items-start gap-3">
+        <div
+          className="flex items-center justify-center shrink-0"
+          style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(196,122,44,0.1)" }}
+        >
+          <Sun className="h-4 w-4" style={{ color: "#C47A2C" }} />
+        </div>
+        <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2 flex-wrap">
+          <span className="font-bold text-sm" style={{ color: "#0F0721" }}>
+            Good morning{name ? `, ${name}` : ""}
           </span>
-          <span className="text-xs text-muted-foreground shrink-0">{today}</span>
+          <span className="text-xs shrink-0" style={{ color: "#94A3B8" }}>{today}</span>
         </div>
       </div>
-      <div className="px-4 py-2 space-y-1.5">
-        {lines.map((line, i) => {
+
+      {/* Body */}
+      <div className="px-4 pb-2 space-y-1.5">
+        {bodyLines.map((line, i) => {
           const parts = line.split(/\*\*(.*?)\*\*/g);
           return (
-            <p key={i} className="text-sm text-foreground leading-relaxed">
+            <p key={i} className="text-sm" style={{ color: "#64748B", lineHeight: 1.65 }}>
               {parts.map((part, j) =>
-                j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+                j % 2 === 1 ? <strong key={j} style={{ color: "#0F0721" }}>{part}</strong> : part
               )}
             </p>
           );
         })}
       </div>
+
+      {/* Tip line */}
+      {tipLine && (
+        <div className="px-4 py-2.5" style={{ borderTop: "1px solid #F1F5F9" }}>
+          <p className="text-xs font-semibold" style={{ color: "#6366F1" }}>
+            {tipLine.replace(/\*\*(.*?)\*\*/g, "$1")}
+          </p>
+        </div>
+      )}
+
+      {/* Footer */}
       <div className="px-4 pb-3 flex items-center justify-between gap-2">
-        <span className="text-[10px] text-muted-foreground">Updated daily at 6:45am</span>
+        <span style={{ fontSize: 10, color: "#94A3B8" }}>Updated daily at 6:45am</span>
         {stale >= 2 && (
-          <span className="text-[10px] text-muted-foreground italic">
+          <span style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>
             Last updated {stale} day{stale !== 1 ? "s" : ""} ago
           </span>
         )}
@@ -78,6 +100,8 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
     </div>
   );
 }
+
+// ── Alert badge (unchanged) ───────────────────────────────────────────────────
 
 function AlertBadge({ alert }: { alert: DashboardAlert }) {
   const isWarn = alert.severity === "warning";
@@ -94,9 +118,12 @@ function AlertBadge({ alert }: { alert: DashboardAlert }) {
   );
 }
 
+// ── Main dashboard ────────────────────────────────────────────────────────────
+
 export default function AppDashboard() {
   const [month, setMonth] = useState(currentMonth);
 
+  // ── data fetching (unchanged) ─────────────────────────────────────────────
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["client", "dashboard", month],
     queryFn:  () => getDashboard(month),
@@ -115,15 +142,23 @@ export default function AppDashboard() {
   });
 
   const firstName = meData?.full_name?.split(" ")[0];
-  const pnl  = data?.pnl;
-  const net  = pnl ? pnl.net_income : 0;
+  const pnl       = data?.pnl;
+  const net       = pnl ? pnl.net_income : 0;
+  const totalCash = data?.cash_balances?.reduce((s, b) => s + b.amount, 0) ?? null;
+  const lowCash   = totalCash !== null && totalCash < 2000;
+  // Tax due — future field; card is hidden until data exists
+  const taxDue    = (data as any)?.tax_due as { date: string; amount?: number } | undefined;
 
   return (
-    <div className="p-4 space-y-4 max-w-lg mx-auto">
-      {/* ── Month selector ─────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-xl font-semibold text-primary">
-          {month ? monthLabel(month) : "Dashboard"}
+    <div className="flex flex-col min-h-full">
+
+      {/* ── Sticky topbar ──────────────────────────────────────────────── */}
+      <div
+        className="sticky top-0 z-10 flex items-center justify-between px-4 py-3"
+        style={{ background: "#fff", borderBottom: "1px solid #E2E8F0" }}
+      >
+        <h1 className="font-display" style={{ fontWeight: 700, color: "#0F0721", fontSize: 18 }}>
+          Dashboard
         </h1>
         <div className="flex items-center gap-2">
           <input
@@ -142,118 +177,218 @@ export default function AppDashboard() {
         </div>
       </div>
 
-      {/* ── Morning briefing ───────────────────────────────────── */}
-      {morningBriefing && <MorningBriefingCard briefing={morningBriefing} name={firstName} />}
+      {/* ── Page content ───────────────────────────────────────────────── */}
+      <div className="p-4 space-y-3 flex-1">
 
-      {/* ── Alerts ─────────────────────────────────────────────── */}
-      {data?.alerts && data.alerts.length > 0 && (
-        <div className="space-y-2">
-          {data.alerts.map((a, i) => <AlertBadge key={a.type ?? i} alert={a} />)}
-        </div>
-      )}
+        {/* Alerts — full width above grid */}
+        {data?.alerts && data.alerts.length > 0 && (
+          <div className="space-y-2">
+            {data.alerts.map((a, i) => <AlertBadge key={a.type ?? i} alert={a} />)}
+          </div>
+        )}
 
-      {/* ── P&L summary card ───────────────────────────────────── */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Profit & Loss
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {isLoading ? (
-            <div className="space-y-2">
-              {[1,2,3,4].map(i => <Skeleton key={i} className="h-5 w-full" />)}
-            </div>
-          ) : isError ? (
-            <p className="text-sm text-destructive">{error instanceof Error ? error.message : "Failed to load"}</p>
-          ) : pnl ? (
-            <>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Gross Revenue</span>
-                <span className="font-medium">{fmt(pnl.total_revenue)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Less Sales Tax</span>
-                <span className="text-muted-foreground">({fmt(pnl.sales_tax)})</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Net Revenue</span>
-                <span className="font-medium">{fmt(pnl.net_revenue)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Expenses</span>
-                <span className="font-medium text-destructive">({fmt(pnl.total_expenses)})</span>
-              </div>
-              <div className="border-t border-border pt-3 flex justify-between">
-                <span className="font-semibold">Net Income</span>
-                <span className={`font-bold text-lg flex items-center gap-1 ${
-                  net >= 0 ? "text-[#16A34A]" : "text-destructive"
-                }`}>
-                  {net >= 0
-                    ? <TrendingUp className="h-4 w-4" />
-                    : net < -100
-                    ? <TrendingDown className="h-4 w-4" />
-                    : <Minus className="h-4 w-4" />
-                  }
-                  {fmtFull(net)}
+        {/* ── Two-column grid ──────────────────────────────────────────── */}
+        <div
+          className="flex flex-col md:grid gap-3"
+          style={{ gridTemplateColumns: "1.4fr 1fr" }}
+        >
+          {/* ── LEFT column — briefing + P&L ─────────── */}
+          {/* order-2 on mobile so right column (stats) appears first */}
+          <div className="order-2 md:order-1 flex flex-col gap-3">
+
+            {/* Briefing card */}
+            {morningBriefing && (
+              <MorningBriefingCard briefing={morningBriefing} name={firstName} />
+            )}
+
+            {/* P&L summary card */}
+            <div className="bg-white" style={{ border: "1px solid #E2E8F0", borderRadius: 12 }}>
+              {/* Header */}
+              <div className="px-4 pt-4 pb-2 flex items-center justify-between gap-2">
+                <span className="font-bold text-sm" style={{ color: "#0F0721" }}>
+                  P&L Summary — {monthLabel(month)}
+                </span>
+                <span
+                  className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
+                  style={{
+                    background: "rgba(251,191,36,0.12)",
+                    color: "#B45309",
+                    border: "1px solid rgba(251,191,36,0.35)",
+                  }}
+                >
+                  Pending
                 </span>
               </div>
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
 
-      {/* ── Bank balances ──────────────────────────────────────── */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Bank Balances</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-5 w-full" />)}</div>
-          ) : data?.cash_balances?.length ? (
-            <ul className="space-y-2">
-              {data.cash_balances.map((b) => (
-                <li key={b.account_name} className="flex justify-between text-sm">
-                  <span className="text-muted-foreground truncate pr-2">{b.account_name}</span>
-                  <span className={`font-medium tabular-nums shrink-0 ${b.amount < 0 ? "text-destructive" : ""}`}>
-                    {fmtFull(b.amount)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No balance data on record.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ── Top 5 expenses ─────────────────────────────────────── */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Top Expenses</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-5 w-full" />)}</div>
-          ) : data?.top_expenses?.length ? (
-            <ul className="space-y-2.5">
-              {data.top_expenses.map((e, i) => (
-                <li key={e.id ?? i} className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4 shrink-0">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{e.vendor}</div>
-                    <div className="text-xs text-muted-foreground truncate">{e.category}</div>
+              {/* Line items */}
+              <div className="px-4 pb-4 space-y-2">
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-5 w-full" />)}
                   </div>
-                  <span className="text-sm font-semibold tabular-nums shrink-0">{fmtFull(e.amount)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No expense data this month.</p>
-          )}
-        </CardContent>
-      </Card>
+                ) : isError ? (
+                  <p className="text-sm text-destructive">
+                    {error instanceof Error ? error.message : "Failed to load"}
+                  </p>
+                ) : pnl ? (
+                  <>
+                    <PnlRow label="Gross Revenue"   value={fmt(pnl.total_revenue)}  bold />
+                    <PnlRow label="Less Sales Tax"  value={`(${fmt(pnl.sales_tax)})`} muted />
+                    <PnlRow label="Net Revenue"     value={fmt(pnl.net_revenue)}    bold />
+                    <PnlRow label="Total Expenses"  value={`(${fmt(pnl.total_expenses)})`} red />
+                    <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 10, marginTop: 4 }}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm" style={{ color: "#0F0721" }}>Net Income</span>
+                        <span
+                          className="font-bold flex items-center gap-1"
+                          style={{ fontSize: 18, color: net >= 0 ? "#16A34A" : "#DC2626" }}
+                        >
+                          {net >= 0
+                            ? <TrendingUp className="h-4 w-4" />
+                            : net < -100
+                            ? <TrendingDown className="h-4 w-4" />
+                            : <Minus className="h-4 w-4" />
+                          }
+                          {fmtFull(net)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No P&L data this month.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT column — stat hero cards ───────── */}
+          <div className="order-1 md:order-2 flex flex-col gap-2.5">
+
+            {/* 1 — Net income hero */}
+            <div style={{ background: "#0F0721", borderRadius: 12, padding: 14 }}>
+              <div
+                style={{
+                  fontSize: 9, color: "rgba(255,255,255,0.3)",
+                  textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8,
+                }}
+              >
+                Net income · {monthLabel(month)}
+              </div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-32" style={{ background: "rgba(255,255,255,0.08)" }} />
+              ) : (
+                <div
+                  style={{
+                    fontSize: 28, fontWeight: 800, color: "#fff",
+                    letterSpacing: "-1px", lineHeight: 1,
+                    color: net >= 0 ? "#fff" : "#FCA5A5",
+                  }}
+                >
+                  {fmtFull(net)}
+                </div>
+              )}
+            </div>
+
+            {/* 2 — Net revenue */}
+            <div className="bg-white" style={{ border: "1px solid #E2E8F0", borderRadius: 12, padding: 14 }}>
+              <StatLabel>Net Revenue</StatLabel>
+              {isLoading ? (
+                <Skeleton className="h-6 w-28 mt-1" />
+              ) : (
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#0F0721", marginTop: 2 }}>
+                  {pnl ? fmt(pnl.net_revenue) : "—"}
+                </div>
+              )}
+            </div>
+
+            {/* 3 — Cash balance */}
+            <div
+              style={{
+                background: lowCash ? "#FEF2F2" : "#fff",
+                border: `1px solid ${lowCash ? "#FECACA" : "#E2E8F0"}`,
+                borderRadius: 12,
+                padding: 14,
+              }}
+            >
+              <StatLabel color={lowCash ? "#DC2626" : undefined}>Cash Balance</StatLabel>
+              {isLoading ? (
+                <Skeleton className="h-6 w-28 mt-1" />
+              ) : (
+                <>
+                  <div
+                    style={{
+                      fontSize: 22, fontWeight: 700, marginTop: 2,
+                      color: lowCash ? "#DC2626" : "#0F0721",
+                    }}
+                  >
+                    {totalCash !== null ? fmtFull(totalCash) : "—"}
+                  </div>
+                  {lowCash && (
+                    <div style={{ fontSize: 11, color: "#DC2626", marginTop: 3, fontWeight: 600 }}>
+                      Transfer today
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* 4 — Tax due (hidden if no data) */}
+            {taxDue && (
+              <div
+                style={{
+                  background: "#FFFBEB",
+                  border: "1px solid #FDE68A",
+                  borderRadius: 12,
+                  padding: 14,
+                }}
+              >
+                <StatLabel color="#B45309">Tax Due</StatLabel>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#B45309", marginTop: 2 }}>
+                  {new Date(taxDue.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </div>
+                <div style={{ fontSize: 11, color: "#B45309", marginTop: 3 }}>
+                  {Math.ceil((new Date(taxDue.date).getTime() - Date.now()) / 86400000)} days away
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
+
+function PnlRow({
+  label, value, bold, muted, red,
+}: {
+  label: string; value: string; bold?: boolean; muted?: boolean; red?: boolean;
+}) {
+  return (
+    <div className="flex justify-between items-center text-sm">
+      <span style={{ color: "#64748B" }}>{label}</span>
+      <span
+        style={{
+          color: red ? "#DC2626" : muted ? "#94A3B8" : "#0F0721",
+          fontWeight: bold || red ? 600 : 400,
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function StatLabel({ children, color }: { children: React.ReactNode; color?: string }) {
+  return (
+    <div
+      style={{
+        fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em",
+        color: color ?? "#94A3B8", fontWeight: 600,
+      }}
+    >
+      {children}
     </div>
   );
 }
