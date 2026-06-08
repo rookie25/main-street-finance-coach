@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import {
   getExpenses, getMe, uploadReceipt, confirmReceipt, patchExpense, deleteExpense,
-  type ExpenseItem, type ReceiptUploadResult,
+  ApiError, type ExpenseItem, type ReceiptUploadResult,
 } from "@/lib/clientApi";
 import { EXPENSE_CATEGORIES } from "@/lib/clientData";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,11 @@ export default function AppExpenses() {
         editedCategory: result.category ?? "",
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not read receipt. Try a clearer photo.");
+      if (e instanceof ApiError && e.status === 429) {
+        toast.warning("Too many uploads at once — wait a moment");
+      } else {
+        toast.error(e instanceof Error ? e.message : "Could not read receipt. Try a clearer photo.");
+      }
       setShowUploadSheet(false);
       setUploadState({ phase: "idle" });
     }

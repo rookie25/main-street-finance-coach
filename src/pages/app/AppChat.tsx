@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { sendChat, getReports } from "@/lib/clientApi";
+import { sendChat, getReports, ApiError } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -105,7 +105,11 @@ export default function AppChat() {
       const resp = await sendChat(apiMessages);
       setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong. Try again.");
+      if (e instanceof ApiError && e.status === 429) {
+        toast.warning("Slow down a little — try again in a minute");
+      } else {
+        toast.error(e instanceof Error ? e.message : "Something went wrong. Try again.");
+      }
       // Remove the user message so they can retry
       setMessages(messages);
     } finally {

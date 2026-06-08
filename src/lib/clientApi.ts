@@ -151,6 +151,9 @@ async function authHeader(): Promise<Record<string, string>> {
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { headers: await authHeader() });
+  if (res.status === 429) {
+    throw new ApiError("You're sending too many requests. Please wait a moment and try again.", 429);
+  }
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
     try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* non-JSON */ }
@@ -165,6 +168,9 @@ async function post<T>(path: string, payload: unknown): Promise<T> {
     headers: { ...(await authHeader()), "Content-Type": "application/json" },
     body:    JSON.stringify(payload),
   });
+  if (res.status === 429) {
+    throw new ApiError("You're sending too many requests. Please wait a moment and try again.", 429);
+  }
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
     try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* non-JSON */ }
@@ -281,6 +287,9 @@ export async function uploadReceipt(file: File): Promise<ReceiptUploadResult> {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body:    form,
   });
+  if (res.status === 429) {
+    throw new ApiError("You're sending too many requests. Please wait a moment and try again.", 429);
+  }
   if (!res.ok) {
     let detail = `Upload failed (${res.status})`;
     try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
