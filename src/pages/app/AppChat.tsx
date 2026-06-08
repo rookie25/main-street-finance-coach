@@ -22,6 +22,15 @@ const STARTER_QUESTIONS = [
   "What are my biggest expense categories?",
 ];
 
+const EXAMPLE_QUESTIONS = [
+  "What did I spend on Craver in May?",
+  "What was my best selling item?",
+  "How much did I make last Tuesday?",
+  "What are my top expenses this month?",
+  "How does May compare to April?",
+  "What's my busiest hour of the day?",
+];
+
 function fmtMonth(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -224,6 +233,18 @@ export default function AppChat() {
         </div>
       )}
 
+      {/* ── Example questions ──────────────────────────────────── */}
+      {isEmpty && !loading && !input && (
+        <div className="px-4 pb-2 border-t border-border bg-background">
+          <p className="text-[11px] text-muted-foreground mt-2 mb-1">Try asking:</p>
+          <ul className="space-y-0.5">
+            {EXAMPLE_QUESTIONS.map((q) => (
+              <li key={q} className="text-[11px] text-muted-foreground">• {q}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ── Input area ─────────────────────────────────────────── */}
       <div className="border-t border-border bg-background px-4 py-3">
         {messages.filter((m) => m.role !== "system").length > 0 && (
@@ -240,7 +261,7 @@ export default function AppChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your revenue, expenses, cash…"
+            placeholder="Ask about your revenue, expenses, vendors…"
             rows={1}
             className="resize-none min-h-[2.75rem] max-h-32 flex-1 text-sm py-2.5"
             disabled={loading}
