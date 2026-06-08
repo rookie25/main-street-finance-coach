@@ -75,12 +75,13 @@ export default function ClientLayout() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* ── Top header ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between" style={{ background: "#ffffff", borderBottom: "1px solid #E2E8F0" }}>
+      <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between" style={{ background: "#0F0721" }}>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] leading-none font-semibold" style={{ color: "#C47A2C" }}>
-            Desired Labs
+          <div className="text-[10px] uppercase tracking-[0.18em] leading-none font-semibold">
+            <span className="text-white">Desired</span>{" "}
+            <span style={{ color: "#C47A2C" }}>Labs</span>
           </div>
-          <div className="font-display text-base font-semibold leading-tight" style={{ color: "#0F0721" }}>
+          <div className="font-display text-base font-semibold leading-tight" style={{ color: "rgba(255,255,255,0.5)" }}>
             {meData?.business_name ?? "Groundstack Coffee"}
           </div>
         </div>
@@ -88,9 +89,10 @@ export default function ClientLayout() {
           <button
             onClick={() => setPanelOpen((o) => !o)}
             title="Notifications"
-            className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="relative p-2 rounded-lg transition-colors"
+            style={{ background: "rgba(196,122,44,0.15)", border: "1px solid rgba(196,122,44,0.25)" }}
           >
-            <Bell className="h-4 w-4" />
+            <Bell className="h-4 w-4" style={{ color: "#C47A2C" }} />
             {unreadNotifications > 0 && (
               <span
                 className="absolute top-1 right-1 h-2 w-2 rounded-full"
@@ -101,7 +103,8 @@ export default function ClientLayout() {
           <button
             onClick={handleSignOut}
             title={`Sign out (${user?.email})`}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: "rgba(255,255,255,0.4)" }}
           >
             <LogOut className="h-4 w-4" />
           </button>
