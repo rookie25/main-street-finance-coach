@@ -144,7 +144,7 @@ export default function AppDashboard() {
   const firstName = meData?.full_name?.split(" ")[0];
   const pnl       = data?.pnl;
   const net       = pnl ? pnl.net_income : 0;
-  const totalCash = data?.cash_balances?.reduce((s, b) => s + b.amount, 0) ?? null;
+  const totalCash = data?.cash_balance ?? null;
   const lowCash   = totalCash !== null && totalCash < 2000;
   // Tax due — future field; card is hidden until data exists
   const taxDue    = data?.tax_due;
