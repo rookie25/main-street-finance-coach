@@ -6,7 +6,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Receipt, FileBarChart2, Calculator, MessageCircle, MessageSquare, LogOut, Bell,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ const NAV_ITEMS = [
 export default function ClientLayout() {
   const { user, signOut } = useClientAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -129,6 +130,9 @@ export default function ClientLayout() {
         <NotificationsPanel
           notifications={notificationsList}
           onClose={() => setPanelOpen(false)}
+          onAnswered={() => {
+            qc.invalidateQueries({ queryKey: ["client", "notifications"] });
+          }}
         />
       )}
 

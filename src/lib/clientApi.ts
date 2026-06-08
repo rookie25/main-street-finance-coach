@@ -119,7 +119,7 @@ export interface ChatResponse {
 }
 
 export interface ClientNotification {
-  type:     "report_ready" | "tax_deadline" | "amex_past_due" | "low_balance";
+  type:     "report_ready" | "tax_deadline" | "amex_past_due" | "low_balance" | "unknown_charge";
   severity: "urgent" | "warning" | "info";
   title:    string;
   body:     string;
@@ -204,6 +204,17 @@ export async function markNotificationsRead(): Promise<void> {
     // Non-critical — ignore silently
   }
 }
+
+export const answerUnknownCharge = (
+  chargeId: string,
+  category: string | null,
+  plCategory: string | null,
+  isPersonal: boolean,
+) =>
+  post<{ ok: boolean; vendor: string; category: string; rule_created: boolean }>(
+    `/client/unknown-charges/${encodeURIComponent(chargeId)}/answer`,
+    { category, pl_category: plCategory, is_personal: isPersonal },
+  );
 
 export const sendChat = (
   messages: { role: "user" | "assistant"; content: string }[],
