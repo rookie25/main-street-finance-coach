@@ -40,8 +40,12 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
 
   return (
     <div
-      className="rounded-xl bg-amber-50 border border-amber-100 border-l-4 overflow-hidden"
-      style={{ borderLeftColor: "#C47A2C" }}
+      className="rounded-xl overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.03))",
+        border: "1px solid rgba(99,102,241,0.15)",
+        borderLeft: "3px solid #6366F1",
+      }}
     >
       <div className="px-4 pt-4 pb-1">
         <div className="flex items-baseline justify-between gap-2 flex-wrap">
@@ -183,7 +187,7 @@ export default function AppDashboard() {
               <div className="border-t border-border pt-3 flex justify-between">
                 <span className="font-semibold">Net Income</span>
                 <span className={`font-bold text-lg flex items-center gap-1 ${
-                  net >= 0 ? "text-primary" : "text-destructive"
+                  net >= 0 ? "text-[#16A34A]" : "text-destructive"
                 }`}>
                   {net >= 0
                     ? <TrendingUp className="h-4 w-4" />

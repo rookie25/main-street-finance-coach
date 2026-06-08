@@ -188,7 +188,7 @@ export default function EAProfile() {
           <div className="flex items-center gap-4 mb-6">
             <div
               className="h-16 w-16 rounded-full flex items-center justify-center text-xl font-semibold text-white shrink-0 select-none"
-              style={{ backgroundColor: "#1A5C38" }}
+              style={{ backgroundColor: "#6366F1" }}
             >
               {initials(displayName)}
             </div>
@@ -245,7 +245,7 @@ export default function EAProfile() {
                     firm_name: pending.firm_name ?? profile.firm_name ?? "",
                   })
                 }
-                style={{ backgroundColor: "#1A5C38" }}
+                style={{ backgroundColor: "#6366F1" }}
                 className="text-white hover:opacity-90"
               >
                 {saveMutation.isPending ? (
@@ -304,7 +304,7 @@ export default function EAProfile() {
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium">
                           <span
                             className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: c.is_active ? "#1A5C38" : "#9ca3af" }}
+                            style={{ backgroundColor: c.is_active ? "#6366F1" : "#9ca3af" }}
                           />
                           {c.is_active ? "Active" : "Pending"}
                         </span>

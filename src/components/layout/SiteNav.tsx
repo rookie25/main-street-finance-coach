@@ -25,6 +25,8 @@ export default function SiteNav() {
 
   useEffect(() => setOpen(false), [pathname]);
 
+  const onDark = !scrolled && !open;
+
   return (
     <header
       className={cn(
@@ -34,7 +36,10 @@ export default function SiteNav() {
     >
       <div className="container-prose flex items-center justify-between h-20">
         <Link to="/" className="flex items-baseline gap-2 group">
-          <span className="font-display text-2xl font-semibold text-primary">Desired Labs</span>
+          <span className="font-display text-2xl font-semibold">
+            <span className={onDark ? "text-white" : "text-primary"}>Desired</span>{" "}
+            <span className="text-accent">Labs</span>
+          </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -44,15 +49,25 @@ export default function SiteNav() {
               to={l.to}
               className={({ isActive }) =>
                 cn(
-                  "text-sm font-medium transition-colors hover:text-accent",
-                  isActive ? "text-accent" : "text-foreground/80"
+                  "text-sm font-medium transition-colors",
+                  isActive
+                    ? "text-[#6366F1]"
+                    : onDark
+                    ? "text-white/80 hover:text-white"
+                    : "text-foreground/80 hover:text-accent"
                 )
               }
             >
               {l.label}
             </NavLink>
           ))}
-          <Link to="/app/login" className="text-sm font-medium text-foreground/60 hover:text-foreground transition-colors">
+          <Link
+            to="/app/login"
+            className={cn(
+              "text-sm font-medium transition-colors",
+              onDark ? "text-white/60 hover:text-white" : "text-foreground/60 hover:text-foreground"
+            )}
+          >
             Sign in →
           </Link>
           <Button asChild variant="brand" size="sm">
@@ -61,7 +76,7 @@ export default function SiteNav() {
         </nav>
 
         <button
-          className="md:hidden p-2 text-foreground"
+          className={cn("md:hidden p-2 transition-colors", onDark ? "text-white" : "text-foreground")}
           aria-label="Toggle menu"
           onClick={() => setOpen((o) => !o)}
         >

@@ -20,6 +20,55 @@ function GoogleIcon() {
   );
 }
 
+const PANEL_FEATURES = [
+  "Daily financial briefings at 6:45 AM",
+  "Automated bookkeeping & categorization",
+  "Monthly CPA-ready package",
+  "Real-time cash flow visibility",
+];
+
+function NeonPanel() {
+  return (
+    <div
+      className="hidden lg:flex flex-1 flex-col items-center justify-center px-12 relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #0F0721 0%, #1A0A3C 40%, #0D1A3C 100%)" }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: [
+            "radial-gradient(ellipse at 80% 10%, rgba(147,51,234,0.25) 0%, transparent 50%)",
+            "radial-gradient(ellipse at 10% 80%, rgba(59,130,246,0.20) 0%, transparent 50%)",
+            "radial-gradient(ellipse at 50% 0%, rgba(196,122,44,0.15) 0%, transparent 40%)",
+          ].join(", "),
+        }}
+      />
+      <div className="relative text-center mb-10">
+        <div className="font-display text-3xl font-semibold mb-1">
+          <span style={{ color: "#6366F1" }}>Desired</span>{" "}
+          <span style={{ color: "#C47A2C" }}>Labs</span>
+        </div>
+        <div className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>AI-powered financial operations</div>
+      </div>
+      <div className="relative space-y-4 max-w-xs w-full">
+        {PANEL_FEATURES.map((feat) => (
+          <div key={feat} className="flex items-center gap-3">
+            <div
+              className="h-7 w-7 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "rgba(99,102,241,0.3)", border: "1px solid rgba(99,102,241,0.5)" }}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 14 14" fill="none">
+                <path d="M2.5 7l3 3 6-6" stroke="#A5B4FC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <span className="text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>{feat}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AppLogin() {
   const { session, loading, signIn, signInWithGoogle, resetPassword } = useClientAuth();
   const location  = useLocation();
@@ -76,129 +125,145 @@ export default function AppLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="text-xs uppercase tracking-[0.2em] text-accent mb-2">Desired Labs</div>
-          <h1 className="font-display text-3xl font-semibold text-primary">Your Portal</h1>
-          <p className="text-sm text-muted-foreground mt-2">Sign in to view Groundstack financials.</p>
-        </div>
-
-        {wrongPortal && (
-          <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 text-center">
-            Please use the correct portal for your account.
+    <div className="min-h-screen flex">
+      {/* Left — form */}
+      <div className="flex-1 flex items-center justify-center px-6" style={{ background: "#F8FAFC" }}>
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="text-xs uppercase tracking-[0.2em] text-accent mb-2">Desired Labs</div>
+            <h1 className="font-display text-3xl font-semibold text-primary">Your Portal</h1>
+            <p className="text-sm text-muted-foreground mt-2">Sign in to view Groundstack financials.</p>
           </div>
-        )}
 
-        {!showReset ? (
-          <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-card space-y-4">
-            {/* Google SSO */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogle}
-              disabled={submitting || loading}
-            >
-              <GoogleIcon />
-              Continue with Google
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">or</span>
-              </div>
+          {wrongPortal && (
+            <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 text-center">
+              Please use the correct portal for your account.
             </div>
+          )}
 
-            {/* Email / password */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="client-email">Email</Label>
-                <Input
-                  id="client-email"
-                  type="email"
-                  autoComplete="username"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@groundstackcoffee.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client-password">Password</Label>
-                <Input
-                  id="client-password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={submitting || loading}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign in
-              </Button>
-            </form>
-
-            <div className="text-center">
-              <button
+          {!showReset ? (
+            <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-card space-y-4">
+              {/* Google SSO */}
+              <Button
                 type="button"
-                onClick={() => setShowReset(true)}
-                className="text-xs text-muted-foreground hover:text-accent hover:underline"
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogle}
+                disabled={submitting || loading}
               >
-                Forgot password?
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-card space-y-4">
-            <h2 className="font-semibold text-primary">Reset your password</h2>
-            {resetSent ? (
-              <p className="text-sm text-muted-foreground">
-                Check your inbox — a reset link has been sent to{" "}
-                <strong>{resetEmail}</strong>.
-              </p>
-            ) : (
-              <form onSubmit={handleReset} className="space-y-4">
+                <GoogleIcon />
+                Continue with Google
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+
+              {/* Email / password */}
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email">Your email</Label>
+                  <Label htmlFor="client-email">Email</Label>
                   <Input
-                    id="reset-email"
+                    id="client-email"
                     type="email"
+                    autoComplete="username"
                     required
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@groundstackcoffee.com"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={resetBusy}>
-                  {resetBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send reset link
+                <div className="space-y-2">
+                  <Label htmlFor="client-password">Password</Label>
+                  <Input
+                    id="client-password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full text-white"
+                  style={{ background: "linear-gradient(135deg, #6366F1, #8B5CF6)" }}
+                  disabled={submitting || loading}
+                >
+                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign in
                 </Button>
               </form>
-            )}
-            <button
-              type="button"
-              onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); }}
-              className="text-xs text-muted-foreground hover:underline"
-            >
-              ← Back to sign in
-            </button>
-          </div>
-        )}
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Trouble signing in?{" "}
-          <a href="mailto:hello@desiredlabs.ai" className="text-accent hover:underline">
-            hello@desiredlabs.ai
-          </a>
-        </p>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowReset(true)}
+                  className="text-xs text-muted-foreground hover:text-accent hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-card space-y-4">
+              <h2 className="font-semibold text-primary">Reset your password</h2>
+              {resetSent ? (
+                <p className="text-sm text-muted-foreground">
+                  Check your inbox — a reset link has been sent to{" "}
+                  <strong>{resetEmail}</strong>.
+                </p>
+              ) : (
+                <form onSubmit={handleReset} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Your email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      required
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="you@groundstackcoffee.com"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full text-white"
+                    style={{ background: "linear-gradient(135deg, #6366F1, #8B5CF6)" }}
+                    disabled={resetBusy}
+                  >
+                    {resetBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Send reset link
+                  </Button>
+                </form>
+              )}
+              <button
+                type="button"
+                onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); }}
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                ← Back to sign in
+              </button>
+            </div>
+          )}
+
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            Trouble signing in?{" "}
+            <a href="mailto:hello@desiredlabs.ai" className="text-accent hover:underline">
+              hello@desiredlabs.ai
+            </a>
+          </p>
+        </div>
       </div>
+
+      {/* Right — Neon Frost panel */}
+      <NeonPanel />
     </div>
   );
 }

@@ -16,6 +16,11 @@ export default {
         display: ['"Playfair Display"', 'Georgia', 'serif'],
       },
       colors: {
+        indigo: {
+          DEFAULT: '#6366F1',
+          light: '#A5B4FC',
+          dark: '#4F46E5',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -75,12 +75,12 @@ export default function ClientLayout() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* ── Top header ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-20 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between" style={{ background: "#ffffff", borderBottom: "1px solid #E2E8F0" }}>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-accent leading-none">
+          <div className="text-[10px] uppercase tracking-[0.18em] leading-none font-semibold" style={{ color: "#C47A2C" }}>
             Desired Labs
           </div>
-          <div className="font-display text-base font-semibold text-primary leading-tight">
+          <div className="font-display text-base font-semibold leading-tight" style={{ color: "#0F0721" }}>
             {meData?.business_name ?? "Groundstack Coffee"}
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function ClientLayout() {
       </main>
 
       {/* ── Bottom navigation tab bar ───────────────────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-20 bg-card border-t border-border">
+      <nav className="fixed bottom-0 left-0 right-0 z-20" style={{ background: "#ffffff", borderTop: "1px solid #E2E8F0" }}>
         <ul className="flex">
           {NAV_ITEMS.map(({ to, label, icon: Icon, end, badge }) => (
             <li key={to} className="flex-1">
@@ -132,8 +132,8 @@ export default function ClientLayout() {
                   cn(
                     "flex flex-col items-center gap-0.5 py-2.5 w-full text-[10px] font-medium transition-colors",
                     isActive
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "text-[#6366F1]"
+                      : "text-[#94A3B8] hover:text-foreground",
                   )
                 }
               >
