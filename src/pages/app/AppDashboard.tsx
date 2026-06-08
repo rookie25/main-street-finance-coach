@@ -147,7 +147,7 @@ export default function AppDashboard() {
   const totalCash = data?.cash_balances?.reduce((s, b) => s + b.amount, 0) ?? null;
   const lowCash   = totalCash !== null && totalCash < 2000;
   // Tax due — future field; card is hidden until data exists
-  const taxDue    = (data as any)?.tax_due as { date: string; amount?: number } | undefined;
+  const taxDue    = data?.tax_due;
 
   return (
     <div className="flex flex-col min-h-full">

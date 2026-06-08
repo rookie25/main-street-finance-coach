@@ -1,4 +1,4 @@
-import { X, AlertTriangle, CheckCircle, FileText } from "lucide-react";
+import { X, AlertTriangle, CheckCircle, FileText, CreditCard, Wallet } from "lucide-react";
 import type { ClientNotification } from "@/lib/clientApi";
 import { cn } from "@/lib/utils";
 
@@ -19,13 +19,15 @@ const ICON_COLOR: Record<string, string> = {
   info:    "text-[#1A5C38]",
 };
 
+function getIcon(type: string) {
+  if (type === "report_ready") return FileText;
+  if (type === "amex_past_due") return CreditCard;
+  if (type === "low_balance") return Wallet;
+  return AlertTriangle;
+}
+
 function NotificationItem({ n }: { n: ClientNotification }) {
-  const Icon =
-    n.type === "report_ready"
-      ? FileText
-      : n.severity === "info"
-      ? CheckCircle
-      : AlertTriangle;
+  const Icon = getIcon(n.type);
 
   return (
     <div className={cn("border-l-4 pl-3 pr-4 py-3.5", BORDER_COLOR[n.severity] ?? "border-l-border")}>

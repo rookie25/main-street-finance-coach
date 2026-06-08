@@ -61,6 +61,11 @@ export interface DashboardData {
   top_expenses:  TopExpense[];
   alerts:        DashboardAlert[];
   briefing:      Briefing | null;
+  tax_due?: {
+    date:       string;
+    amount?:    number;
+    days_until?: number;
+  };
 }
 
 export interface ExpenseItem {
@@ -187,6 +192,18 @@ export const getTax = () =>
 
 export const getNotifications = () =>
   get<NotificationsData>("/client/notifications");
+
+export async function markNotificationsRead(): Promise<void> {
+  try {
+    const headers = await authHeader();
+    await fetch(`${BASE}/client/notifications/read`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+    });
+  } catch {
+    // Non-critical — ignore silently
+  }
+}
 
 export const sendChat = (
   messages: { role: "user" | "assistant"; content: string }[],

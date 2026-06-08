@@ -68,7 +68,9 @@ export default function Contact() {
     setSubmitting(false);
 
     if (error) {
-      console.error("[contact] lead insert failed:", error);
+      if (import.meta.env.DEV) {
+        console.error("[contact] lead insert failed:", error);
+      }
       toast.error("Something went wrong. Please try again or email us directly.");
       return;
     }

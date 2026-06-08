@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { getNotifications, getMe } from "@/lib/clientApi";
+import { getNotifications, getMe, markNotificationsRead } from "@/lib/clientApi";
 import NotificationsPanel from "@/components/client/NotificationsPanel";
 
 const NAV_ITEMS = [
@@ -32,6 +32,8 @@ export default function ClientLayout() {
     queryKey: ["client", "notifications"],
     queryFn:  getNotifications,
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: meData } = useQuery({
@@ -87,7 +89,11 @@ export default function ClientLayout() {
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setPanelOpen((o) => !o)}
+            onClick={() => {
+              const isOpening = !panelOpen;
+              setPanelOpen(isOpening);
+              if (isOpening) void markNotificationsRead();
+            }}
             title="Notifications"
             className="relative p-2 rounded-lg transition-colors"
             style={{ background: "rgba(196,122,44,0.15)", border: "1px solid rgba(196,122,44,0.25)" }}
@@ -95,9 +101,17 @@ export default function ClientLayout() {
             <Bell className="h-4 w-4" style={{ color: "#C47A2C" }} />
             {unreadNotifications > 0 && (
               <span
-                className="absolute top-1 right-1 h-2 w-2 rounded-full"
-                style={{ backgroundColor: "#C47A2C" }}
-              />
+                style={{
+                  position: "absolute", top: "-6px", right: "-6px",
+                  minWidth: "18px", height: "18px",
+                  background: "#C47A2C", borderRadius: "9px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "10px", fontWeight: 700, color: "#fff",
+                  padding: "0 4px", border: "2px solid #0F0721",
+                }}
+              >
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
             )}
           </button>
           <button

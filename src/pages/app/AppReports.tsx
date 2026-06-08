@@ -34,7 +34,7 @@ export default function AppReports() {
       const newest = data.available_months[0];
       if (newest && newest !== month) setMonth(newest);
     }
-  }, [data?.available_months]);
+  }, [data?.available_months, month]);
 
   const availableMonths = data?.available_months ?? [];
   const hasPnl = !!data?.pnl_pdf_url;
