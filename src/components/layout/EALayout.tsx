@@ -9,7 +9,9 @@ import { listClients, getClientsSummary, getClientsAlerts, type EAClient, type C
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+
+const SIDEBAR_BG = "#0D1B2A";
+const DIVIDER    = "1px solid rgba(255,255,255,0.07)";
 
 function fmtMoney(n: number | null): string {
   if (n === null) return "";
@@ -19,16 +21,6 @@ function fmtMoney(n: number | null): string {
 function fmtSyncDate(iso: string | null): string {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function StatusDot({ status }: { status: EAClient["status"] }) {
-  return (
-    <span
-      title={status}
-      className="inline-block h-2 w-2 rounded-full shrink-0"
-      style={{ backgroundColor: status === "active" ? "#6366F1" : "#C47A2C" }}
-    />
-  );
 }
 
 export default function EALayout() {
@@ -103,18 +95,27 @@ export default function EALayout() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
+      {/* ── Sidebar ──────────────────────────────────────────────── */}
       <aside
         className="w-72 shrink-0 flex flex-col"
-        style={{ background: "#0F0721", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ background: SIDEBAR_BG, borderRight: DIVIDER }}
       >
-        <div className="px-5 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#C47A2C" }}>Desired Labs</div>
-          <div className="font-display text-lg font-semibold text-white">EA Portal</div>
+        {/* Header */}
+        <div className="px-5 py-5" style={{ borderBottom: DIVIDER }}>
+          <div className="text-[10px] uppercase tracking-[0.2em] font-semibold" style={{ color: "#C47A2C" }}>
+            Desired Labs
+          </div>
+          <div className="font-display text-lg text-white" style={{ fontWeight: 700 }}>
+            EA Portal
+          </div>
         </div>
 
+        {/* Client list */}
         <nav className="flex-1 overflow-y-auto p-3">
-          <div className="px-2 pb-2 text-xs font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.35)" }}>
+          <div
+            className="px-2 pb-2 text-[10px] font-semibold uppercase"
+            style={{ color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em" }}
+          >
             Clients
           </div>
 
@@ -132,98 +133,139 @@ export default function EALayout() {
           )}
 
           {clients?.length === 0 && (
-            <div className="px-2 py-3 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>No clients yet.</div>
+            <div className="px-2 py-3 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+              No clients yet.
+            </div>
           )}
 
           <ul className="space-y-1">
-            {clients?.map((c) => (
-              <li key={c.client_schema}>
-                <NavLink
-                  to={`/ea/clients/${encodeURIComponent(c.client_schema)}`}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors"
-                  style={({ isActive }) => isActive
-                    ? { background: "rgba(99,102,241,0.2)", color: "#A5B4FC", borderLeft: "1px solid rgba(99,102,241,0.3)" }
-                    : { color: "rgba(255,255,255,0.65)" }
-                  }
-                >
-                  <StatusDot status={c.status} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="truncate flex-1">{c.business_name}</span>
-                      {msgCounts[c.client_schema] > 0 && (
-                        <span className="flex items-center gap-0.5 shrink-0 text-[9px] font-bold" style={{ color: "#A5B4FC" }}>
-                          <MessageCircle className="h-3 w-3" />
-                          {msgCounts[c.client_schema]}
-                        </span>
-                      )}
-                      {c.pending_count > 0 && (
-                        <span className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold shrink-0" style={{ background: "#C47A2C", color: "#fff" }}>
-                          {c.pending_count}
-                        </span>
-                      )}
-                    </div>
-                    {(() => {
-                      const s = summaryMap[c.client_schema];
-                      if (!s || (s.net_revenue === null && s.net_income === null && !s.last_sync)) return null;
-                      return (
-                        <div className="mt-0.5 text-xs leading-snug" style={{ color: "rgba(255,255,255,0.35)" }}>
-                          {(s.net_revenue !== null || s.net_income !== null) && (
-                            <span>
-                              {s.net_revenue !== null && `Revenue: ${fmtMoney(s.net_revenue)}`}
-                              {s.net_revenue !== null && s.net_income !== null && "  "}
-                              {s.net_income !== null && `NI: ${fmtMoney(s.net_income)}`}
-                            </span>
-                          )}
-                          {s.last_sync && (
-                            <span className="block">Synced: {fmtSyncDate(s.last_sync)}</span>
-                          )}
-                        </div>
-                      );
-                    })()}
-                    {(() => {
-                      const pills = alertsMap[c.client_schema];
-                      if (!pills?.length) return null;
-                      return (
-                        <div className="flex flex-wrap gap-0.5 mt-0.5">
-                          {pills.map((alert) => (
+            {clients?.map((c) => {
+              const summary = summaryMap[c.client_schema];
+              const pills   = alertsMap[c.client_schema];
+              const unread  = msgCounts[c.client_schema] ?? 0;
+
+              return (
+                <li key={c.client_schema}>
+                  <NavLink
+                    to={`/ea/clients/${encodeURIComponent(c.client_schema)}`}
+                    className="block rounded-lg transition-all"
+                  >
+                    {({ isActive }) => (
+                      <div
+                        className="px-3 py-2.5 rounded-lg"
+                        style={isActive
+                          ? { background: "rgba(255,255,255,0.95)" }
+                          : { background: "transparent" }
+                        }
+                      >
+                        {/* Name row */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          {/* Status dot */}
+                          <span
+                            className="inline-block h-2 w-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: isActive
+                                ? (c.status === "active" ? "#16A34A" : "#C47A2C")
+                                : (c.status === "active" ? "#6366F1" : "#C47A2C"),
+                            }}
+                          />
+                          <span
+                            className="truncate flex-1 text-sm"
+                            style={{
+                              color: isActive ? "#0D1B2A" : "rgba(255,255,255,0.85)",
+                              fontWeight: isActive ? 700 : 600,
+                            }}
+                          >
+                            {c.business_name}
+                          </span>
+                          {/* Unread message badge */}
+                          {unread > 0 && (
                             <span
-                              key={alert.type}
-                              className={cn(
-                                "inline-flex rounded-full text-[10px] font-medium px-1.5 py-0.5",
-                                alert.color === "green" && "bg-green-100 text-green-700",
-                                alert.color === "amber" && "bg-amber-100 text-amber-700",
-                                alert.color === "red"   && "bg-red-100 text-red-700",
-                              )}
+                              className="flex items-center gap-0.5 shrink-0 text-[9px] font-bold"
+                              style={{ color: isActive ? "#6366F1" : "rgba(255,255,255,0.5)" }}
                             >
-                              {alert.type === "report"
-                                ? `📄 ${alert.label}`
-                                : alert.color === "red"
-                                  ? `🔴 ${alert.label}`
-                                  : `⚠️ ${alert.label}`}
+                              <MessageCircle className="h-3 w-3" />
+                              {unread}
                             </span>
-                          ))}
+                          )}
+                          {/* Pending count badge */}
+                          {c.pending_count > 0 && (
+                            <span
+                              className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold shrink-0"
+                              style={{ background: "#C47A2C", color: "#fff" }}
+                            >
+                              {c.pending_count}
+                            </span>
+                          )}
                         </div>
-                      );
-                    })()}
-                  </div>
-                </NavLink>
-              </li>
-            ))}
+
+                        {/* Summary line */}
+                        {summary && (summary.net_revenue !== null || summary.net_income !== null || summary.last_sync) && (
+                          <div
+                            className="mt-0.5 text-xs leading-snug pl-4"
+                            style={{ color: isActive ? "#64748B" : "rgba(255,255,255,0.45)" }}
+                          >
+                            {(summary.net_revenue !== null || summary.net_income !== null) && (
+                              <span>
+                                {summary.net_revenue !== null && `Revenue: ${fmtMoney(summary.net_revenue)}`}
+                                {summary.net_revenue !== null && summary.net_income !== null && "  "}
+                                {summary.net_income !== null && `NI: ${fmtMoney(summary.net_income)}`}
+                              </span>
+                            )}
+                            {summary.last_sync && (
+                              <span
+                                className="block"
+                                style={{ color: isActive ? "#94A3B8" : "rgba(255,255,255,0.3)" }}
+                              >
+                                Synced: {fmtSyncDate(summary.last_sync)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Alert pills */}
+                        {pills?.length > 0 && (
+                          <div className="flex flex-wrap gap-0.5 mt-1 pl-4">
+                            {pills.map((alert) => (
+                              <span
+                                key={alert.type}
+                                className={cn(
+                                  "inline-flex rounded-full text-[10px] font-medium px-1.5 py-0.5",
+                                  alert.color === "green" && "bg-green-100 text-green-700",
+                                  alert.color === "amber" && "bg-amber-100 text-amber-700",
+                                  alert.color === "red"   && "bg-red-100 text-red-700",
+                                )}
+                              >
+                                {alert.type === "report"
+                                  ? `📄 ${alert.label}`
+                                  : alert.color === "red"
+                                    ? `🔴 ${alert.label}`
+                                    : `⚠️ ${alert.label}`}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
-        {/* Footer: who's signed in + sign out */}
-        <div className="p-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="px-2 pb-2 text-xs truncate" style={{ color: "rgba(255,255,255,0.35)" }}>
+        {/* Footer */}
+        <div className="p-3" style={{ borderTop: DIVIDER }}>
+          <div className="px-2 pb-2 text-xs truncate" style={{ color: "rgba(255,255,255,0.3)" }}>
             {user?.email}
           </div>
           <NavLink
             to="/ea/profile"
             className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors mb-1"
-            style={({ isActive }) => isActive
-              ? { background: "rgba(99,102,241,0.2)", color: "#A5B4FC" }
-              : { color: "rgba(255,255,255,0.55)" }
-            }
+            style={({ isActive }) => ({
+              color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
+              background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
+            })}
           >
             <UserCircle className="h-4 w-4 shrink-0" />
             Profile
@@ -231,9 +273,10 @@ export default function EALayout() {
           <button
             onClick={handleSignOut}
             className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors"
-            style={{ color: "rgba(255,255,255,0.4)" }}
+            style={{ color: "rgba(255,255,255,0.5)" }}
           >
-            <LogOut className="h-4 w-4 shrink-0" /> Sign out
+            <LogOut className="h-4 w-4 shrink-0" />
+            Sign out
           </button>
         </div>
       </aside>
