@@ -30,12 +30,17 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EAMessagesCard from "@/components/ea/EAMessagesCard";
 import EAWorksheet from "@/components/ea/EAWorksheet";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import DateRangePicker, {
+  computePreset,
+  toISODate,
+  type DateRange,
+} from "@/components/DateRangePicker";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/ui/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function monthLabel(m: string): string {
@@ -48,23 +53,24 @@ function monthLabel(m: string): string {
 export default function EAClient() {
   const { schema = "" } = useParams();
   const qc = useQueryClient();
+  const [range, setRange] = useState<DateRange>(() => computePreset("last_month"));
   const [month, setMonth] = useState<string>("");
 
   // Client display info comes from the (cached) sidebar list.
   const { data: clients } = useQuery({ queryKey: ["ea", "clients"], queryFn: listClients });
   const client = clients?.find((c) => c.client_schema === schema);
 
-  // Available report months.
+  // Available report months filtered by selected range.
   const monthsQ = useQuery({
-    queryKey: ["ea", "months", schema],
-    queryFn: () => getClientMonths(schema),
+    queryKey: ["ea", "months", schema, toISODate(range.start), toISODate(range.end)],
+    queryFn: () => getClientMonths(schema, toISODate(range.start), toISODate(range.end)),
     enabled: !!schema,
   });
 
-  // Default to the newest month once the list loads / when switching clients.
+  // Use the first (newest) month in the filtered list for per-month cards.
   useEffect(() => {
     const months = monthsQ.data?.months ?? [];
-    setMonth((cur) => (cur && months.includes(cur) ? cur : months[0] ?? ""));
+    setMonth(months[0] ?? "");
   }, [monthsQ.data, schema]);
 
   return (
@@ -77,19 +83,11 @@ export default function EAClient() {
             {client?.business_name ?? schema}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="month" className="text-sm text-muted-foreground">Month</Label>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger id="month" className="w-[180px]">
-              <SelectValue placeholder={monthsQ.isLoading ? "Loading…" : "Select month"} />
-            </SelectTrigger>
-            <SelectContent>
-              {(monthsQ.data?.months ?? []).map((m) => (
-                <SelectItem key={m} value={m}>{monthLabel(m)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <DateRangePicker
+          value={range}
+          onChange={setRange}
+          defaultPreset="last_month"
+        />
       </div>
 
       {monthsQ.data && monthsQ.data.months.length === 0 ? (

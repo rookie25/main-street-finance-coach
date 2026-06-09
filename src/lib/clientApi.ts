@@ -96,6 +96,18 @@ export interface ReportLinks {
   expires_in:             number | null;
 }
 
+export interface ReportForRange {
+  month:                 string;
+  pnl_pdf_url:           string | null;
+  balance_sheet_pdf_url: string | null;
+}
+
+export interface ReportLinksRange {
+  available_months: string[];
+  reports:          ReportForRange[];
+  expires_in:       number | null;
+}
+
 export interface TaxDeadline {
   quarter:    string;
   due_date:   string;
@@ -192,6 +204,9 @@ export const getExpenses = (month?: string) =>
 
 export const getReports = (month?: string) =>
   get<ReportLinks>(`/client/reports${month ? `?month=${encodeURIComponent(month)}` : ""}`);
+
+export const getReportsRange = (start: string, end: string) =>
+  get<ReportLinksRange>(`/client/reports?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
 
 export const getTax = () =>
   get<TaxData>("/client/tax");

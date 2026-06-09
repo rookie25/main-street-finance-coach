@@ -86,8 +86,12 @@ async function get<T>(path: string): Promise<T> {
 export const getMe = () => get<EAProfile>("/ea/me");
 export const listClients = () => get<EAClient[]>("/ea/clients");
 
-export const getClientMonths = (schema: string) =>
-  get<EAMonths>(`/ea/client/${encodeURIComponent(schema)}/months`);
+export const getClientMonths = (schema: string, start?: string, end?: string) => {
+  const params = start && end
+    ? `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`
+    : "";
+  return get<EAMonths>(`/ea/client/${encodeURIComponent(schema)}/months${params}`);
+};
 
 export const getClientPnl = (schema: string, month: string) =>
   get<PnlLinks>(`/ea/client/${encodeURIComponent(schema)}/pnl?month=${encodeURIComponent(month)}`);
