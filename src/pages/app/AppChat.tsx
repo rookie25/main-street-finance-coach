@@ -32,6 +32,9 @@ const EXAMPLE_QUESTIONS = [
   "What will I make this month?",
   "Am I on track to hit $20k in June?",
   "Predict my end of month revenue",
+  "How much should I set aside for taxes?",
+  "When is my next quarterly tax payment?",
+  "What's my estimated tax bill so far?",
 ];
 
 function fmtMonth(ym: string): string {
