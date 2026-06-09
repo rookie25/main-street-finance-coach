@@ -52,6 +52,20 @@ const QUICK_CATEGORIES: QuickCategory[] = [
   { label: "Other…",          Icon: MoreHorizontal, color: "#64748B", category: null,                    plCategory: null,                    isPersonal: false, opensSearch: true },
 ];
 
+// Map backend suggestion slugs → quick tile label
+const SUGGESTION_TILE: Record<string, string> = {
+  payroll:   "Payroll",
+  cogs:      "Food & Supplies",
+  repairs:   "Repairs",
+  utilities: "Rent & Utils",
+};
+
+function tileForSuggestion(slug: string | null | undefined): QuickCategory | null {
+  if (!slug) return null;
+  const label = SUGGESTION_TILE[slug];
+  return label ? (QUICK_CATEGORIES.find((t) => t.label === label) ?? null) : null;
+}
+
 const FULL_CATEGORIES = [
   "Cost of Goods Sold", "Repairs & Maintenance", "Rent & Lease", "Utilities",
   "Payroll", "Payroll Taxes", "Insurance", "Advertising & Marketing",
@@ -66,16 +80,21 @@ function UnknownChargeCard({ notification, onAnswered }: {
   onAnswered:   () => void;
 }) {
   const meta       = notification.meta as Record<string, unknown>;
-  const chargeId   = meta.charge_id  as string;
-  const vendor     = meta.vendor     as string;
-  const amount     = meta.amount     as number;
-  const dateStr    = meta.date       as string;
+  const chargeId   = meta.charge_id          as string;
+  const vendor     = meta.vendor             as string;
+  const amount     = meta.amount             as number;
+  const dateStr    = meta.date               as string;
+  const suggSlug   = meta.suggested_category as string | null | undefined;
 
-  const [selected,   setSelected]   = useState<QuickCategory | null>(null);
-  const [fullCat,    setFullCat]    = useState<string | null>(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [search,     setSearch]     = useState("");
-  const [saving,     setSaving]     = useState(false);
+  const suggestedTile = tileForSuggestion(suggSlug);
+
+  const [selected,    setSelected]    = useState<QuickCategory | null>(suggestedTile);
+  const [fullCat,     setFullCat]     = useState<string | null>(null);
+  const [showSearch,  setShowSearch]  = useState(false);
+  const [search,      setSearch]      = useState("");
+  const [saving,      setSaving]      = useState(false);
+  // True while the user hasn't deviated from the pre-selected suggestion
+  const [usingHint,   setUsingHint]   = useState(!!suggestedTile);
   const qc = useQueryClient();
 
   const filteredFull = FULL_CATEGORIES.filter((c) =>
@@ -108,6 +127,7 @@ function UnknownChargeCard({ notification, onAnswered }: {
   }
 
   function selectQuick(tile: QuickCategory) {
+    setUsingHint(tile === suggestedTile && !tile.opensSearch);
     if (tile.opensSearch) {
       setShowSearch(true);
       setSelected(tile);
@@ -122,6 +142,7 @@ function UnknownChargeCard({ notification, onAnswered }: {
   function selectFull(cat: string) {
     setFullCat(cat);
     setSelected(null);
+    setUsingHint(false);
   }
 
   return (
@@ -138,8 +159,17 @@ function UnknownChargeCard({ notification, onAnswered }: {
         </div>
       </div>
 
+      {/* Suggestion hint badge */}
+      {suggestedTile && usingHint && (
+        <p className="text-[10px] text-indigo-600 font-medium mb-2 flex items-center gap-1">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500" />
+          Suggested based on vendor name — tap a different tile to override
+        </p>
+      )}
+
       {/* 3×2 quick tile grid */}
       <div className="grid grid-cols-3 gap-1.5 mb-2">
+
         {QUICK_CATEGORIES.map((tile) => {
           const isActive = !tile.opensSearch
             ? selected?.label === tile.label && !fullCat
@@ -196,9 +226,13 @@ function UnknownChargeCard({ notification, onAnswered }: {
           className="w-full mt-2 py-2 rounded-lg text-xs font-semibold text-white transition-opacity"
           style={{ background: "#6366F1", opacity: saving ? 0.6 : 1 }}
         >
-          {saving
-            ? <><Loader2 className="inline h-3 w-3 animate-spin mr-1.5" />Saving…</>
-            : `Save — remember for next time`}
+          {saving ? (
+            <><Loader2 className="inline h-3 w-3 animate-spin mr-1.5" />Saving…</>
+          ) : usingHint ? (
+            `Confirm: ${effectiveCategory.label} — remember for next time`
+          ) : (
+            `Save — remember for next time`
+          )}
         </button>
       )}
     </div>
