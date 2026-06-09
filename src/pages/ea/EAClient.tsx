@@ -10,16 +10,15 @@ import {
   AlertTriangle, Check, CheckCircle2, Download, FileText, Flag,
   Loader2, Trash2, Undo2, XCircle,
 } from "lucide-react";
-import type { EAFlagWithExpense } from "@/lib/eaData";
 import { toast } from "sonner";
 
 import {
   getClientMonths, getClientPnl, listClients, asDownloadUrl,
-  getPendingAdjustments, approveAdjustment, rejectAdjustment,
-  type PendingAdjustment,
+  getPendingAdjustments, approveAdjustment, rejectAdjustment, getEAFlags,
+  type PendingAdjustment, type EAFlagEnriched,
 } from "@/lib/eaApi";
 import {
-  approveMonth, deleteOverride, getApproval, getFlagsWithExpenses, getNote, getOverrides,
+  approveMonth, deleteOverride, getApproval, getNote, getOverrides,
   saveNote, setFlagResolved, setOverride, unapproveMonth, EXPENSE_CATEGORIES,
 } from "@/lib/eaData";
 import { Button } from "@/components/ui/button";
@@ -446,7 +445,7 @@ function FlagRow({
   onToggle,
   busy,
 }: {
-  flag: EAFlagWithExpense;
+  flag: EAFlagEnriched;
   onToggle: (resolved: boolean) => void;
   busy: boolean;
 }) {
@@ -523,7 +522,7 @@ function FlagsCard({ schema, month, qc }: SectionProps) {
   const key = ["ea", "flags", schema, month];
   const flagsQ = useQuery({
     queryKey: key,
-    queryFn: () => getFlagsWithExpenses(schema, month),
+    queryFn: () => getEAFlags(schema, month).then((r) => r.flags),
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: key });

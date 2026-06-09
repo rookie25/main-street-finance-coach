@@ -276,3 +276,34 @@ export async function resetAdjustments(schema: string, month: string): Promise<v
 
 export const worksheetExportUrl = (schema: string, month: string) =>
   `${BASE}/ea/client/${encodeURIComponent(schema)}/worksheet/export?month=${encodeURIComponent(month)}`;
+
+// ── Flags ─────────────────────────────────────────────────────────────────────
+// Fetched via backend (not direct Supabase) because monthly_expenses has
+// is_client_schema() RLS — the EA's JWT cannot join it directly.
+
+export interface EAFlagExpense {
+  id:          string;
+  vendor:      string | null;
+  amount:      number | null;
+  date:        string | null;
+  pl_category: string | null;
+}
+
+export interface EAFlagEnriched {
+  id:           number;
+  client_schema: string;
+  month:        string;
+  line_item_id: string;
+  flag_note:    string;
+  flagged_by:   string;
+  resolved:     boolean;
+  resolved_by:  string | null;
+  resolved_at:  string | null;
+  created_at:   string;
+  expense:      EAFlagExpense | null;
+}
+
+export const getEAFlags = (schema: string, month: string) =>
+  get<{ flags: EAFlagEnriched[] }>(
+    `/ea/client/${encodeURIComponent(schema)}/flags?month=${encodeURIComponent(month)}`,
+  );
