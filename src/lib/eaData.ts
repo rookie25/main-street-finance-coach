@@ -55,6 +55,19 @@ async function currentUserId(): Promise<string | undefined> {
 }
 
 // --- Flags ----------------------------------------------------------------
+
+export interface ExpenseDetail {
+  id: string;
+  vendor: string | null;
+  amount: number | null;
+  date: string | null;
+  pl_category: string | null;
+}
+
+export interface EAFlagWithExpense extends EAFlag {
+  expense: ExpenseDetail | null;
+}
+
 export async function getFlags(schema: string, month: string): Promise<EAFlag[]> {
   return unwrap(
     await supabase
@@ -62,8 +75,37 @@ export async function getFlags(schema: string, month: string): Promise<EAFlag[]>
       .select("*")
       .eq("client_schema", schema)
       .eq("month", month)
+      .order("resolved", { ascending: true })
       .order("created_at", { ascending: false }),
   );
+}
+
+export async function getFlagsWithExpenses(
+  schema: string,
+  month: string,
+): Promise<EAFlagWithExpense[]> {
+  const flags = await getFlags(schema, month);
+  if (flags.length === 0) return [];
+
+  const ids = [...new Set(flags.map((f) => f.line_item_id).filter(Boolean))];
+
+  const { data: expenses, error } = await supabase
+    .from("monthly_expenses")
+    .select("id,vendor,amount,date,pl_category")
+    .in("id", ids);
+
+  if (error) {
+    console.warn("[getFlagsWithExpenses] could not fetch expense details:", error.message);
+  }
+
+  const expenseMap = new Map<string, ExpenseDetail>(
+    (expenses ?? []).map((e) => [e.id, e as ExpenseDetail]),
+  );
+
+  return flags.map((f) => ({
+    ...f,
+    expense: expenseMap.get(f.line_item_id) ?? null,
+  }));
 }
 
 export async function addFlag(
@@ -72,8 +114,6 @@ export async function addFlag(
   lineItemId: string,
   note: string,
 ): Promise<EAFlag> {
-  // flagged_by defaults to auth.uid() in the DB; we send it explicitly too so
-  // the returned row is fully attributed without a re-fetch.
   const rows = unwrap(
     await supabase
       .from("ea_flags")

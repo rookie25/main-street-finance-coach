@@ -10,6 +10,7 @@ import {
   AlertTriangle, Check, CheckCircle2, Download, FileText, Flag,
   Loader2, Trash2, Undo2, XCircle,
 } from "lucide-react";
+import type { EAFlagWithExpense } from "@/lib/eaData";
 import { toast } from "sonner";
 
 import {
@@ -18,7 +19,7 @@ import {
   type PendingAdjustment,
 } from "@/lib/eaApi";
 import {
-  addFlag, approveMonth, deleteOverride, getApproval, getFlags, getNote, getOverrides,
+  approveMonth, deleteOverride, getApproval, getFlagsWithExpenses, getNote, getOverrides,
   saveNote, setFlagResolved, setOverride, unapproveMonth, EXPENSE_CATEGORIES,
 } from "@/lib/eaData";
 import { Button } from "@/components/ui/button";
@@ -426,80 +427,146 @@ function NotesCard({ schema, month, qc }: SectionProps) {
 }
 
 // --------------------------------------------------------------------------- //
-// Flags — flag a line item with a note/question
+// Flags — client-flagged line items awaiting EA review
 // --------------------------------------------------------------------------- //
+
+function fmtFlagDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function fmtFlagAmt(amount: number | null): string {
+  if (amount == null) return "";
+  return amount.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
+}
+
+function FlagRow({
+  flag,
+  onToggle,
+  busy,
+}: {
+  flag: EAFlagWithExpense;
+  onToggle: (resolved: boolean) => void;
+  busy: boolean;
+}) {
+  const { expense, resolved, flag_note, line_item_id } = flag;
+  const vendor = expense?.vendor ?? line_item_id;
+
+  return (
+    <li
+      className={`rounded-xl border p-3 text-sm flex items-start justify-between gap-3 ${
+        resolved
+          ? "border-border bg-transparent opacity-60"
+          : "border-red-200 bg-red-50/30 dark:border-red-900/40 dark:bg-red-950/10"
+      }`}
+    >
+      <div className="min-w-0 flex-1">
+        {/* Vendor + badge */}
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <Flag className="h-3.5 w-3.5 text-red-500 shrink-0" />
+          <span className={`font-semibold truncate ${resolved ? "line-through text-muted-foreground" : ""}`}>
+            {vendor}
+          </span>
+          {resolved && <Badge variant="secondary" className="text-[10px] ml-1">resolved</Badge>}
+        </div>
+
+        {/* Expense details line */}
+        {expense && (
+          <div className="text-xs text-muted-foreground mb-1">
+            {[
+              fmtFlagAmt(expense.amount),
+              expense.date ? fmtFlagDate(expense.date) : null,
+              expense.pl_category,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+        )}
+
+        {/* Flag note */}
+        {flag_note && (
+          <p className={`text-xs italic ${resolved ? "line-through text-muted-foreground" : "text-muted-foreground"}`}>
+            "{flag_note}"
+          </p>
+        )}
+      </div>
+
+      {/* Action button */}
+      {resolved ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0 h-7 text-xs text-muted-foreground"
+          disabled={busy}
+          onClick={() => onToggle(false)}
+        >
+          <Undo2 className="h-3 w-3" />
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 h-7 text-xs"
+          disabled={busy}
+          onClick={() => onToggle(true)}
+        >
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
+          Resolve
+        </Button>
+      )}
+    </li>
+  );
+}
+
 function FlagsCard({ schema, month, qc }: SectionProps) {
   const key = ["ea", "flags", schema, month];
-  const flagsQ = useQuery({ queryKey: key, queryFn: () => getFlags(schema, month) });
-  const [lineItem, setLineItem] = useState("");
-  const [note, setNote] = useState("");
+  const flagsQ = useQuery({
+    queryKey: key,
+    queryFn: () => getFlagsWithExpenses(schema, month),
+  });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: key });
 
-  const add = useMutation({
-    mutationFn: () => addFlag(schema, month, lineItem.trim(), note.trim()),
-    onSuccess: () => { setLineItem(""); setNote(""); toast.success("Line item flagged"); invalidate(); },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not add flag."),
-  });
   const toggle = useMutation({
     mutationFn: (v: { id: number; resolved: boolean }) => setFlagResolved(v.id, v.resolved),
-    onSuccess: invalidate,
+    onSuccess: (_, { resolved }) => {
+      toast.success(resolved ? "Marked resolved" : "Reopened");
+      invalidate();
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update flag."),
   });
 
-  const canAdd = lineItem.trim() && note.trim();
+  const flags = flagsQ.data ?? [];
+  const unresolvedCount = flags.filter((f) => !f.resolved).length;
 
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base">Flags</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Input
-            placeholder="Line item (e.g. 'Rent' or expense id)"
-            value={lineItem}
-            onChange={(e) => setLineItem(e.target.value)}
-          />
-          <Textarea
-            rows={2}
-            placeholder="Question or note for this line item…"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={() => add.mutate()} disabled={!canAdd || add.isPending}>
-              {add.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Flag className="mr-2 h-4 w-4" />}
-              Flag line item
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          Flags
+          {unresolvedCount > 0 && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-600 text-[10px] font-bold dark:bg-red-950 dark:text-red-400">
+              {unresolvedCount}
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
         {flagsQ.isLoading ? (
-          <Skeleton className="h-12 w-full" />
-        ) : flagsQ.data && flagsQ.data.length > 0 ? (
+          <div className="space-y-2">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : flags.length > 0 ? (
           <ul className="space-y-2">
-            {flagsQ.data.map((f) => (
-              <li
+            {flags.map((f) => (
+              <FlagRow
                 key={f.id}
-                className="rounded-lg border border-border p-3 text-sm flex items-start justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium truncate">{f.line_item_id}</span>
-                    {f.resolved && <Badge variant="secondary" className="text-[10px]">resolved</Badge>}
-                  </div>
-                  <p className={`text-muted-foreground ${f.resolved ? "line-through" : ""}`}>{f.flag_note}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => toggle.mutate({ id: f.id, resolved: !f.resolved })}
-                >
-                  {f.resolved ? <Undo2 className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                </Button>
-              </li>
+                flag={f}
+                onToggle={(resolved) => toggle.mutate({ id: f.id, resolved })}
+                busy={toggle.isPending}
+              />
             ))}
           </ul>
         ) : (
