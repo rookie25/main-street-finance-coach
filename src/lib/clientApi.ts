@@ -131,11 +131,37 @@ export interface ChatResponse {
 }
 
 export interface ClientNotification {
-  type:     "report_ready" | "tax_deadline" | "amex_past_due" | "low_balance" | "unknown_charge";
+  type:     "report_ready" | "tax_deadline" | "amex_past_due" | "low_balance" | "unknown_charge" | "monthly_close";
   severity: "urgent" | "warning" | "info";
   title:    string;
   body:     string;
   meta:     Record<string, unknown>;
+}
+
+export interface MonthlyCloseTaskInstructions {
+  title:          string;
+  description:    string;
+  steps:          string[] | null;
+  input_type:     "number" | "file";
+  accepted_types?: string;
+  help_url?:       string;
+}
+
+export interface MonthlyCloseTask {
+  id:              string;
+  task_type:       "cash_drawer" | "doordash_csv" | "amex_csv";
+  status:          "pending" | "submitted" | "processed";
+  submitted_at:    string | null;
+  submitted_value: string | null;
+  instructions:    MonthlyCloseTaskInstructions;
+}
+
+export interface MonthlyCloseData {
+  period:      string | null;
+  tasks:       MonthlyCloseTask[];
+  done_count:  number;
+  total_count: number;
+  all_done:    boolean;
 }
 
 export interface NotificationsData {
@@ -255,6 +281,41 @@ export const getMorningBriefing = () =>
 // Append &download= to a signed URL so the browser prompts a file download.
 export const asDownloadUrl = (signedUrl: string, filename: string) =>
   `${signedUrl}&download=${encodeURIComponent(filename)}`;
+
+// ── Monthly Close ─────────────────────────────────────────────────────────────
+
+export const getMonthlyClose = () =>
+  get<MonthlyCloseData>("/client/monthly-close");
+
+export const submitCashDrawer = (period: string, amount: number) =>
+  post<{ success: boolean; amount: number }>(
+    "/client/monthly-close/cash-drawer",
+    { period, amount },
+  );
+
+export async function uploadMonthlyCSV(
+  taskType: "doordash_csv" | "amex_csv",
+  period:   string,
+  file:     File,
+): Promise<{ success: boolean; processed: boolean; result: Record<string, unknown> }> {
+  const { data } = await supabase.auth.getSession();
+  const token    = data.session?.access_token;
+  const form     = new FormData();
+  form.append("task_type", taskType);
+  form.append("period",    period);
+  form.append("file",      file);
+  const res = await fetch(`${BASE}/client/monthly-close/upload-csv`, {
+    method:  "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body:    form,
+  });
+  if (!res.ok) {
+    let detail = `Upload failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<{ success: boolean; processed: boolean; result: Record<string, unknown> }>;
+}
 
 // ── Receipt upload / confirm ──────────────────────────────────────────────────
 

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { X, AlertTriangle, CheckCircle, FileText, CreditCard, Wallet, ShoppingBasket, Wrench, Building2, Users, User, MoreHorizontal, Loader2 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { ClientNotification } from "@/lib/clientApi";
-import { answerUnknownCharge } from "@/lib/clientApi";
+import { answerUnknownCharge, getMonthlyClose } from "@/lib/clientApi";
+import MonthlyCloseCard from "@/components/client/MonthlyCloseCard";
 import { cn } from "@/lib/utils";
 
 interface NotificationsPanelProps {
@@ -264,6 +265,22 @@ function NotificationItem({ n, onAnswered }: { n: ClientNotification; onAnswered
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
 export default function NotificationsPanel({ notifications, onClose, onAnswered }: NotificationsPanelProps) {
+  const { data: closeData } = useQuery({
+    queryKey:      ["monthly-close"],
+    queryFn:       getMonthlyClose,
+    refetchInterval: 60_000,
+  });
+
+  const showCloseCard = !!(
+    closeData && closeData.tasks.length > 0 && !closeData.all_done
+  );
+
+  // Strip the backend "monthly_close" summary notification from the list —
+  // it's represented here by MonthlyCloseCard instead.
+  const otherNotifications = notifications.filter((n) => n.type !== "monthly_close");
+
+  const isEmpty = !showCloseCard && otherNotifications.length === 0;
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
@@ -279,20 +296,32 @@ export default function NotificationsPanel({ notifications, onClose, onAnswered 
           </button>
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-border">
-          {notifications.length === 0 ? (
+          {isEmpty ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8 py-12">
               <CheckCircle className="h-9 w-9 text-[#1A5C38]" />
               <p className="text-sm font-medium text-foreground">You're all caught up ✓</p>
               <p className="text-xs text-muted-foreground">No notifications right now.</p>
             </div>
           ) : (
-            notifications.map((n, i) => (
-              <NotificationItem
-                key={i}
-                n={n}
-                onAnswered={onAnswered ?? (() => {})}
-              />
-            ))
+            <>
+              {showCloseCard && <MonthlyCloseCard data={closeData!} />}
+
+              {showCloseCard && otherNotifications.length > 0 && (
+                <div className="px-4 py-1.5 bg-muted/40">
+                  <p className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">
+                    Other Notifications
+                  </p>
+                </div>
+              )}
+
+              {otherNotifications.map((n, i) => (
+                <NotificationItem
+                  key={i}
+                  n={n}
+                  onAnswered={onAnswered ?? (() => {})}
+                />
+              ))}
+            </>
           )}
         </div>
       </div>
