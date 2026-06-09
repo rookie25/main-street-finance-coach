@@ -3,7 +3,7 @@ import { CheckCircle, ChevronDown, ChevronUp, Loader2, Upload } from "lucide-rea
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { MonthlyCloseData, MonthlyCloseTask } from "@/lib/clientApi";
-import { submitCashDrawer, uploadMonthlyCSV } from "@/lib/clientApi";
+import { submitCashDrawer, uploadMonthlyCSV, resetMonthlyCloseTask } from "@/lib/clientApi";
 
 interface Props {
   data: MonthlyCloseData;
@@ -34,8 +34,10 @@ export default function MonthlyCloseCard({ data }: Props) {
   const [amexUploading, setAmexUploading] = useState(false);
   const [ddResult,     setDdResult]     = useState<Record<string, unknown> | null>(null);
   const [amexResult,   setAmexResult]   = useState<Record<string, unknown> | null>(null);
-  const [ddExpanded,   setDdExpanded]   = useState(false);
-  const [amexExpanded, setAmexExpanded] = useState(false);
+  const [ddExpanded,        setDdExpanded]        = useState(false);
+  const [amexExpanded,      setAmexExpanded]      = useState(false);
+  const [resetting,         setResetting]         = useState<string | null>(null);
+  const [editingCashDrawer, setEditingCashDrawer] = useState(false);
 
   const doneCount = localTasks.filter((t) => t.status !== "pending").length;
   const allDone   = localTasks.length > 0 && doneCount === localTasks.length;
@@ -97,6 +99,26 @@ export default function MonthlyCloseCard({ data }: Props) {
     }
   }
 
+  async function handleReset(taskType: "doordash_csv" | "amex_csv") {
+    setResetting(taskType);
+    try {
+      await resetMonthlyCloseTask(data.period!, taskType);
+      setLocalTasks((prev) =>
+        prev.map((t) =>
+          t.task_type === taskType
+            ? { ...t, status: "pending" as const, submitted_at: null, submitted_value: null }
+            : t
+        )
+      );
+      if (taskType === "doordash_csv") { setDdFile(null); setDdResult(null); }
+      else { setAmexFile(null); setAmexResult(null); }
+    } catch {
+      toast.error("Reset failed. Try again.");
+    } finally {
+      setResetting(null);
+    }
+  }
+
   // ── All-done banner ────────────────────────────────────────────────────────
   if (allDone) {
     return (
@@ -123,23 +145,39 @@ export default function MonthlyCloseCard({ data }: Props) {
 
   function renderCashDrawer(task: MonthlyCloseTask) {
     const instr = task.instructions;
-    if (task.status !== "pending") {
-      const amt = parseFloat(task.submitted_value ?? "0");
+    const amt   = parseFloat(task.submitted_value ?? "0");
+
+    if (task.status !== "pending" && !editingCashDrawer) {
       return (
         <div className="flex items-center gap-2 py-2">
           <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
           <span className="text-xs font-medium text-foreground flex-1">{instr.title}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground mr-1">
             ${isNaN(amt) ? "—" : amt.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </span>
+          <button
+            onClick={() => { setCashValue(isNaN(amt) ? "" : String(amt)); setEditingCashDrawer(true); }}
+            className="text-[10px] text-muted-foreground hover:text-foreground underline bg-transparent border-none cursor-pointer"
+          >
+            Edit ✏
+          </button>
         </div>
       );
     }
+
     return (
       <div className="py-2 space-y-1.5">
         <div className="flex items-center gap-2">
           <span className="text-base">💰</span>
           <span className="text-xs font-medium text-foreground">{instr.title}</span>
+          {editingCashDrawer && (
+            <button
+              onClick={() => setEditingCashDrawer(false)}
+              className="ml-auto text-[10px] text-muted-foreground hover:text-foreground underline bg-transparent border-none cursor-pointer"
+            >
+              Cancel
+            </button>
+          )}
         </div>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -155,7 +193,10 @@ export default function MonthlyCloseCard({ data }: Props) {
             />
           </div>
           <button
-            onClick={handleCashSave}
+            onClick={async () => {
+              await handleCashSave();
+              setEditingCashDrawer(false);
+            }}
             disabled={cashSaving || !cashValue}
             className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-50 flex items-center gap-1"
             style={{ background: "#6366F1" }}
@@ -185,19 +226,24 @@ export default function MonthlyCloseCard({ data }: Props) {
       if (result) {
         if (taskType === "doordash_csv" && result.gross_sales != null) {
           const gs = Number(result.gross_sales);
-          resultText = `Processed — $${gs.toLocaleString("en-US", { minimumFractionDigits: 2 })} gross added`;
+          resultText = `$${gs.toLocaleString("en-US", { minimumFractionDigits: 2 })} gross`;
         } else if (taskType === "amex_csv" && result.new_expenses != null) {
           const n = Number(result.new_expenses);
-          resultText = `${n} new expense${n === 1 ? "" : "s"} — check notifications`;
+          resultText = `${n} charge${n === 1 ? "" : "s"} flagged`;
         }
       }
       return (
         <div className="flex items-center gap-2 py-2">
           <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
           <span className="text-xs font-medium text-foreground flex-1">{instr.title}</span>
-          <span className="text-[10px] text-muted-foreground text-right leading-snug max-w-[110px]">
-            {resultText}
-          </span>
+          <span className="text-[10px] text-muted-foreground">{resultText}</span>
+          <button
+            onClick={() => handleReset(taskType)}
+            disabled={resetting === taskType}
+            className="text-[10px] text-muted-foreground hover:text-foreground underline bg-transparent border-none cursor-pointer flex items-center gap-0.5 disabled:opacity-50 ml-1"
+          >
+            {resetting === taskType ? <Loader2 className="h-3 w-3 animate-spin" /> : "Re-upload ↩"}
+          </button>
         </div>
       );
     }

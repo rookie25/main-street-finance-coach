@@ -153,6 +153,7 @@ export interface MonthlyCloseTask {
   status:          "pending" | "submitted" | "processed";
   submitted_at:    string | null;
   submitted_value: string | null;
+  processed_at:    string | null;
   instructions:    MonthlyCloseTaskInstructions;
 }
 
@@ -212,6 +213,23 @@ async function post<T>(path: string, payload: unknown): Promise<T> {
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
     try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* non-JSON */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function patch<T>(path: string, payload: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method:  "PATCH",
+    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body:    JSON.stringify(payload),
+  });
+  if (res.status === 429) {
+    throw new ApiError("You're sending too many requests. Please wait a moment and try again.", 429);
+  }
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail || b?.error) detail = b.detail ?? b.error; } catch { /* non-JSON */ }
     throw new ApiError(detail, res.status);
   }
   return res.json() as Promise<T>;
@@ -291,6 +309,15 @@ export const submitCashDrawer = (period: string, amount: number) =>
   post<{ success: boolean; amount: number }>(
     "/client/monthly-close/cash-drawer",
     { period, amount },
+  );
+
+export const resetMonthlyCloseTask = (
+  period:   string,
+  taskType: "cash_drawer" | "doordash_csv" | "amex_csv",
+) =>
+  patch<{ success: boolean; task_type: string; period: string; message: string }>(
+    "/client/monthly-close/reset-task",
+    { period, task_type: taskType },
   );
 
 export async function uploadMonthlyCSV(
