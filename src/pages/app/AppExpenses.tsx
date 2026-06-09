@@ -11,7 +11,7 @@ import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera, Paperclip, Plus, Pencil, Trash2, Loader2,
-  AlertTriangle, CheckCircle2, Info,
+  AlertTriangle, CheckCircle2, Info, Search, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -66,6 +66,9 @@ export default function AppExpenses() {
   const [draftAmount,    setDraftAmount]    = useState("");
   const [draftDate,      setDraftDate]      = useState("");
   const [draftCategory,  setDraftCategory]  = useState("");
+
+  // Search
+  const [search, setSearch] = useState("");
 
   // Delete confirmation
   const [deletingExpense, setDeletingExpense] = useState<ExpenseItem | null>(null);
@@ -249,6 +252,16 @@ export default function AppExpenses() {
   const expenses = data?.expenses ?? [];
   const total    = expenses.reduce((s, e) => s + e.amount, 0);
 
+  const q = search.trim().toLowerCase();
+  const filteredExpenses = q
+    ? expenses.filter((e) =>
+        (e.vendor   ?? "").toLowerCase().includes(q) ||
+        String(e.amount).includes(q)                ||
+        (e.category ?? "").toLowerCase().includes(q) ||
+        (e.date     ?? "").includes(q)
+      )
+    : expenses;
+
   return (
     <div className="p-4 space-y-4 max-w-lg mx-auto">
 
@@ -289,6 +302,35 @@ export default function AppExpenses() {
         </div>
       )}
 
+      {/* ── Search bar ──────────────────────────────────────────── */}
+      {!isLoading && expenses.length > 0 && (
+        <div className="space-y-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by vendor, amount..."
+              className="w-full bg-white border border-[#E2E8F0] rounded-lg pl-9 pr-8 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          {q && (
+            <p className="text-[11px] text-muted-foreground px-1">
+              Showing {filteredExpenses.length} of {expenses.length} expenses
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Expense list ────────────────────────────────────────── */}
       {isLoading ? (
         <div className="space-y-3">
@@ -309,9 +351,18 @@ export default function AppExpenses() {
             Upload a receipt to get started
           </button>
         </div>
+      ) : filteredExpenses.length === 0 ? (
+        <div className="text-center py-12 space-y-2">
+          <Search className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+          <p className="text-sm font-medium">No expenses match "{search}"</p>
+          <p className="text-xs text-muted-foreground">Try searching by vendor name or amount</p>
+          <button onClick={() => setSearch("")} className="mt-1 text-xs text-primary underline-offset-2 hover:underline">
+            Clear search
+          </button>
+        </div>
       ) : (
         <ul className="space-y-2">
-          {expenses.map((e) => (
+          {filteredExpenses.map((e) => (
             <ExpenseRow key={e.id} expense={e}
               onEdit={() => openEdit(e)}
               onDelete={() => setDeletingExpense(e)} />
