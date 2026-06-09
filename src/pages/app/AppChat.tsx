@@ -68,6 +68,7 @@ export default function AppChat() {
   const [input,         setInput]         = useState("");
   const [loading,       setLoading]       = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [isRestored,    setIsRestored]    = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
 
@@ -86,22 +87,69 @@ export default function AppChat() {
     }
   }, [months, selectedMonth]);
 
+  // Purge chat keys older than 3 months on mount
+  useEffect(() => {
+    const now = new Date();
+    const cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    const cutoff = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, "0")}`;
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("groundstack_chat_"))
+      .forEach((k) => {
+        const month = k.replace("groundstack_chat_", "");
+        if (month < cutoff) localStorage.removeItem(k);
+      });
+  }, []);
+
+  // Restore saved history when selectedMonth changes
+  useEffect(() => {
+    if (!selectedMonth) return;
+    const key = `groundstack_chat_${selectedMonth}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          setIsRestored(true);
+          return;
+        }
+      }
+    } catch { /* ignore corrupt data */ }
+    setMessages([]);
+    setIsRestored(false);
+  }, [selectedMonth]);
+
+  // Persist messages to localStorage (exclude system separators, cap at 50)
+  useEffect(() => {
+    if (!selectedMonth || messages.length === 0) return;
+    const key = `groundstack_chat_${selectedMonth}`;
+    try {
+      const toSave = messages.filter((m) => m.role !== "system").slice(-50);
+      localStorage.setItem(key, JSON.stringify(toSave));
+    } catch { /* ignore storage errors */ }
+  }, [messages, selectedMonth]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
   function handleMonthChange(month: string) {
     setSelectedMonth(month);
-    setMessages(prev => [
-      ...prev,
-      { role: "system", content: `Switched to ${fmtMonth(month)} →` },
-    ]);
+    // Restore effect will load/clear history for the new month
+  }
+
+  function handleNewConversation() {
+    if (selectedMonth) localStorage.removeItem(`groundstack_chat_${selectedMonth}`);
+    setMessages([]);
+    setIsRestored(false);
+    toast.success("Conversation cleared");
   }
 
   async function submit(text: string) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
+    setIsRestored(false);
     // Visible message — original text only
     const nextMessages: Message[] = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
@@ -146,6 +194,21 @@ export default function AppChat() {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-8.5rem)]">
+      {/* ── Restored banner ────────────────────────────────────── */}
+      {isRestored && !isEmpty && selectedMonth && (
+        <div className="flex items-center justify-between px-4 py-1.5 bg-[#F8FAFC] border-b border-border">
+          <span className="text-[11px] text-[#94A3B8]">
+            Continuing your {fmtMonth(selectedMonth)} conversation
+          </span>
+          <button
+            onClick={handleNewConversation}
+            className="text-[11px] text-[#6366F1] hover:underline underline-offset-2"
+          >
+            New conversation
+          </button>
+        </div>
+      )}
+
       {/* ── Message list ───────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
 
@@ -255,7 +318,7 @@ export default function AppChat() {
       <div className="border-t border-border bg-background px-4 py-3">
         {messages.filter((m) => m.role !== "system").length > 0 && (
           <button
-            onClick={() => setMessages([])}
+            onClick={handleNewConversation}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-2 transition-colors"
           >
             <RotateCcw className="h-3 w-3" /> New conversation
@@ -285,7 +348,7 @@ export default function AppChat() {
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
-          Uses your real bookkeeping data · Conversation resets on refresh
+          Uses your real bookkeeping data · History saved per month
         </p>
       </div>
     </div>
