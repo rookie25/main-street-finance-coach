@@ -56,79 +56,6 @@ async function currentUserId(): Promise<string | undefined> {
 
 // --- Flags ----------------------------------------------------------------
 
-export interface ExpenseDetail {
-  id: string;
-  vendor: string | null;
-  amount: number | null;
-  date: string | null;
-  pl_category: string | null;
-}
-
-export interface EAFlagWithExpense extends EAFlag {
-  expense: ExpenseDetail | null;
-}
-
-export async function getFlags(schema: string, month: string): Promise<EAFlag[]> {
-  return unwrap(
-    await supabase
-      .from("ea_flags")
-      .select("*")
-      .eq("client_schema", schema)
-      .eq("month", month)
-      .order("resolved", { ascending: true })
-      .order("created_at", { ascending: false }),
-  );
-}
-
-export async function getFlagsWithExpenses(
-  schema: string,
-  month: string,
-): Promise<EAFlagWithExpense[]> {
-  const flags = await getFlags(schema, month);
-  if (flags.length === 0) return [];
-
-  const ids = [...new Set(flags.map((f) => f.line_item_id).filter(Boolean))];
-
-  const { data: expenses, error } = await supabase
-    .from("monthly_expenses")
-    .select("id,vendor,amount,date,pl_category")
-    .in("id", ids);
-
-  if (error) {
-    console.warn("[getFlagsWithExpenses] could not fetch expense details:", error.message);
-  }
-
-  const expenseMap = new Map<string, ExpenseDetail>(
-    (expenses ?? []).map((e) => [e.id, e as ExpenseDetail]),
-  );
-
-  return flags.map((f) => ({
-    ...f,
-    expense: expenseMap.get(f.line_item_id) ?? null,
-  }));
-}
-
-export async function addFlag(
-  schema: string,
-  month: string,
-  lineItemId: string,
-  note: string,
-): Promise<EAFlag> {
-  const rows = unwrap(
-    await supabase
-      .from("ea_flags")
-      .insert({
-        client_schema: schema,
-        month,
-        line_item_id: lineItemId,
-        flag_note: note,
-        flagged_by: await currentUserId(),
-      })
-      .select(),
-  );
-  return rows[0];
-}
-
 export async function setFlagResolved(id: number, resolved: boolean): Promise<void> {
   unwrap(
     await supabase
@@ -175,6 +102,9 @@ export async function approveMonth(
       )
       .select(),
   );
+  if (!rows || rows.length === 0) {
+    throw new Error("Insert succeeded but returned no data — possible RLS restriction");
+  }
   return rows[0];
 }
 
@@ -222,6 +152,9 @@ export async function setOverride(
       )
       .select(),
   );
+  if (!rows || rows.length === 0) {
+    throw new Error("Insert succeeded but returned no data — possible RLS restriction");
+  }
   return rows[0];
 }
 
@@ -257,6 +190,9 @@ export async function saveNote(schema: string, month: string, note: string): Pro
       )
       .select(),
   );
+  if (!rows || rows.length === 0) {
+    throw new Error("Insert succeeded but returned no data — possible RLS restriction");
+  }
   return rows[0];
 }
 

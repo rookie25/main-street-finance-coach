@@ -125,8 +125,10 @@ export default function AppDashboard() {
 
   // ── data fetching (unchanged) ─────────────────────────────────────────────
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["client", "dashboard", month],
-    queryFn:  () => getDashboard(month),
+    queryKey:             ["client", "dashboard", month],
+    queryFn:              () => getDashboard(month),
+    staleTime:            60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: morningBriefing } = useQuery({

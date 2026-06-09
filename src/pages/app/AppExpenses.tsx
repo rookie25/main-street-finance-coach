@@ -89,9 +89,11 @@ export default function AppExpenses() {
   const clientSchema = meData?.client_schema ?? "";
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["client", "expenses", month],
-    queryFn:  () => getExpenses(month),
-    enabled:  !!month,
+    queryKey:             ["client", "expenses", month],
+    queryFn:              () => getExpenses(month),
+    enabled:              !!month,
+    staleTime:            60_000,
+    refetchOnWindowFocus: false,
   });
 
   useQuery({
@@ -657,7 +659,7 @@ function ExpenseRow({
           onClick={onToggleFlag}
           disabled={isFlagging}
           className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
-          title={isFlagged ? "Flagged for EA review — click to unflag" : "Flag for EA review"}
+          aria-label={isFlagged ? "Flagged for EA review — click to unflag" : "Flag for EA review"}
         >
           {isFlagging
             ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -666,12 +668,12 @@ function ExpenseRow({
         </button>
         <button onClick={onEdit}
           className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-          title="Edit">
+          aria-label="Edit expense">
           <Pencil className="h-3.5 w-3.5" />
         </button>
         <button onClick={onDelete}
           className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors"
-          title="Delete">
+          aria-label="Delete expense">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>

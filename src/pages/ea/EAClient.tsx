@@ -3,7 +3,7 @@
 // Layer-2 tools — approve the month, flag line items, override categories, and
 // keep a monthly note. Financial PDFs come from the backend (signed URLs);
 // flags/approvals/overrides/notes read & write Supabase directly under RLS.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
