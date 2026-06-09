@@ -29,6 +29,9 @@ const EXAMPLE_QUESTIONS = [
   "What are my top expenses this month?",
   "How does May compare to April?",
   "What's my busiest hour of the day?",
+  "What will I make this month?",
+  "Am I on track to hit $20k in June?",
+  "Predict my end of month revenue",
 ];
 
 function fmtMonth(ym: string): string {
