@@ -3,9 +3,8 @@
 // financial data into Claude's system prompt. History is session-only.
 import { useEffect, useRef, useState } from "react";
 import { Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { sendChat, getReports, ApiError } from "@/lib/clientApi";
+import { sendChat, ApiError } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -42,6 +41,23 @@ function fmtMonth(ym: string): string {
   return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
+function currentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getMonthOptions(): { value: string; label: string }[] {
+  const options = [];
+  const today = new Date();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    options.push({ value, label });
+  }
+  return options;
+}
+
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2">
@@ -67,25 +83,12 @@ export default function AppChat() {
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [input,         setInput]         = useState("");
   const [loading,       setLoading]       = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentYearMonth);
   const [isRestored,    setIsRestored]    = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
 
-  const { data: reportsData, isLoading: monthsLoading } = useQuery({
-    queryKey: ["client", "reports"],
-    queryFn: () => getReports(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const months = reportsData?.available_months ?? [];
-
-  // Default to most recent month once data loads
-  useEffect(() => {
-    if (months.length > 0 && !selectedMonth) {
-      setSelectedMonth(months[0]);
-    }
-  }, [months, selectedMonth]);
+  const monthOptions = getMonthOptions();
 
   // Purge chat keys older than 3 months on mount
   useEffect(() => {
@@ -165,7 +168,7 @@ export default function AppChat() {
             ? { ...m, content: `[Context: User is asking about ${fmtMonth(selectedMonth)}] ${m.content}` }
             : m,
         );
-      const resp = await sendChat(apiMessages);
+      const resp = await sendChat(apiMessages, selectedMonth);
       setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
     } catch (e) {
       if (e instanceof ApiError && e.status === 429) {
@@ -278,29 +281,18 @@ export default function AppChat() {
       </div>
 
       {/* ── Month picker ───────────────────────────────────────── */}
-      {(monthsLoading || months.length > 0) && (
-        <div className="px-4 py-2 border-t border-border bg-background flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-muted-foreground shrink-0">Asking about:</span>
-          {monthsLoading ? (
-            <select
-              disabled
-              className="text-sm border border-border rounded-lg px-3 py-1.5 bg-background text-muted-foreground flex-1 min-w-0"
-            >
-              <option>Loading months…</option>
-            </select>
-          ) : (
-            <select
-              value={selectedMonth ?? ""}
-              onChange={(e) => handleMonthChange(e.target.value)}
-              className="text-sm border border-border rounded-lg px-3 py-1.5 bg-background flex-1 min-w-0"
-            >
-              {months.map((m) => (
-                <option key={m} value={m}>{fmtMonth(m)}</option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
+      <div className="px-4 py-2 border-t border-border bg-background flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground shrink-0">Asking about:</span>
+        <select
+          value={selectedMonth}
+          onChange={(e) => handleMonthChange(e.target.value)}
+          className="text-sm border border-border rounded-lg px-3 py-1.5 bg-background flex-1 min-w-0"
+        >
+          {monthOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
 
       {/* ── Example questions ──────────────────────────────────── */}
       {isEmpty && !loading && !input && (
