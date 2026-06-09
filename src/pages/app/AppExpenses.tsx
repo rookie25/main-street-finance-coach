@@ -11,11 +11,12 @@ import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera, Paperclip, Plus, Pencil, Trash2, Loader2,
-  AlertTriangle, CheckCircle2, Info, Search, X,
+  AlertTriangle, CheckCircle2, Info, Search, X, Flag,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   getExpenses, getMe, uploadReceipt, confirmReceipt, patchExpense, deleteExpense,
+  getFlaggedExpenses, flagExpense, unflagExpense,
   ApiError, type ExpenseItem, type ReceiptUploadResult,
 } from "@/lib/clientApi";
 import { EXPENSE_CATEGORIES } from "@/lib/clientData";
@@ -70,6 +71,10 @@ export default function AppExpenses() {
   // Search
   const [search, setSearch] = useState("");
 
+  // Flagging
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set());
+  const [flaggingId, setFlaggingId] = useState<string | null>(null);
+
   // Delete confirmation
   const [deletingExpense, setDeletingExpense] = useState<ExpenseItem | null>(null);
 
@@ -87,6 +92,16 @@ export default function AppExpenses() {
     queryKey: ["client", "expenses", month],
     queryFn:  () => getExpenses(month),
     enabled:  !!month,
+  });
+
+  useQuery({
+    queryKey: ["client", "expenses", "flagged"],
+    queryFn:  async () => {
+      const res = await getFlaggedExpenses();
+      setFlaggedIds(new Set(res.flagged_ids));
+      return res;
+    },
+    staleTime: 60_000,
   });
 
   // ── upload ──────────────────────────────────────────────────────────────────
@@ -247,6 +262,39 @@ export default function AppExpenses() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Save failed."),
   });
 
+  // ── flag / unflag ────────────────────────────────────────────────────────────
+
+  async function handleToggleFlag(expense: ExpenseItem) {
+    if (flaggingId) return;
+    const isFlagged = flaggedIds.has(expense.id);
+    setFlaggingId(expense.id);
+    // Optimistic update
+    setFlaggedIds((prev) => {
+      const next = new Set(prev);
+      isFlagged ? next.delete(expense.id) : next.add(expense.id);
+      return next;
+    });
+    try {
+      if (isFlagged) {
+        await unflagExpense(expense.id);
+        toast.success("Flag removed");
+      } else {
+        await flagExpense(expense.id);
+        toast.success("Flagged for Cliff to review");
+      }
+    } catch (e) {
+      // Revert optimistic update on error
+      setFlaggedIds((prev) => {
+        const next = new Set(prev);
+        isFlagged ? next.add(expense.id) : next.delete(expense.id);
+        return next;
+      });
+      toast.error(e instanceof Error ? e.message : "Could not update flag");
+    } finally {
+      setFlaggingId(null);
+    }
+  }
+
   // ── render ──────────────────────────────────────────────────────────────────
 
   const expenses = data?.expenses ?? [];
@@ -365,7 +413,10 @@ export default function AppExpenses() {
           {filteredExpenses.map((e) => (
             <ExpenseRow key={e.id} expense={e}
               onEdit={() => openEdit(e)}
-              onDelete={() => setDeletingExpense(e)} />
+              onDelete={() => setDeletingExpense(e)}
+              isFlagged={flaggedIds.has(e.id)}
+              isFlagging={flaggingId === e.id}
+              onToggleFlag={() => handleToggleFlag(e)} />
           ))}
         </ul>
       )}
@@ -566,17 +617,27 @@ function ExpenseRow({
   expense,
   onEdit,
   onDelete,
+  isFlagged,
+  isFlagging,
+  onToggleFlag,
 }: {
-  expense:  ExpenseItem;
-  onEdit:   () => void;
-  onDelete: () => void;
+  expense:       ExpenseItem;
+  onEdit:        () => void;
+  onDelete:      () => void;
+  isFlagged:     boolean;
+  isFlagging:    boolean;
+  onToggleFlag:  () => void;
 }) {
   const needsCategory = !expense.category;
 
   return (
     <li className={cn(
-      "bg-card border rounded-xl px-4 py-3 flex items-center gap-3",
-      needsCategory ? "border-amber-300/60 bg-amber-50/30" : "border-border",
+      "bg-card border rounded-xl px-4 py-3 flex items-center gap-3 transition-colors",
+      isFlagged
+        ? "border-l-2 border-l-red-600 border-t-border border-r-border border-b-border bg-red-600/[0.03]"
+        : needsCategory
+          ? "border-amber-300/60 bg-amber-50/30"
+          : "border-border",
     )}>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate">{expense.vendor}</div>
@@ -592,6 +653,17 @@ function ExpenseRow({
       </div>
       <span className="text-sm font-semibold tabular-nums shrink-0">{fmt(expense.amount)}</span>
       <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={onToggleFlag}
+          disabled={isFlagging}
+          className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+          title={isFlagged ? "Flagged for EA review — click to unflag" : "Flag for EA review"}
+        >
+          {isFlagging
+            ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            : <Flag className={cn("h-3.5 w-3.5", isFlagged ? "text-red-600 fill-red-600" : "text-muted-foreground")} />
+          }
+        </button>
         <button onClick={onEdit}
           className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
           title="Edit">

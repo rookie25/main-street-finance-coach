@@ -301,6 +301,29 @@ export async function uploadReceipt(file: File): Promise<ReceiptUploadResult> {
 export const confirmReceipt = (payload: ReceiptConfirmPayload) =>
   post<ReceiptConfirmResult>("/client/confirm-receipt", payload);
 
+// ── Expense flagging ──────────────────────────────────────────────────────────
+
+export const getFlaggedExpenses = () =>
+  get<{ flagged_ids: string[] }>("/client/expenses/flagged");
+
+export const flagExpense = (id: string) =>
+  post<{ flagged: boolean }>(`/client/expenses/${encodeURIComponent(id)}/flag`, {
+    reason: "Review requested by client",
+  });
+
+export async function unflagExpense(id: string): Promise<{ flagged: boolean }> {
+  const res = await fetch(`${BASE}/client/expenses/${encodeURIComponent(id)}/flag`, {
+    method:  "DELETE",
+    headers: await authHeader(),
+  });
+  if (!res.ok) {
+    let detail = `Unflag failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+  return res.json() as Promise<{ flagged: boolean }>;
+}
+
 // ── Expense edits / correction requests ──────────────────────────────────────
 
 export interface PatchExpensePayload {
