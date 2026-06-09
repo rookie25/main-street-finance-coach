@@ -258,19 +258,47 @@ export default function DateRangePicker({
   const panelRef   = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Click-outside to close
+  // Position panel via fixed coordinates, close on scroll/resize
   useEffect(() => {
     if (!open) return;
+
+    function position() {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      const el   = panelRef.current;
+      if (!rect || !el) return;
+      const panelW = Math.min(520, window.innerWidth * 0.95);
+      const left   = rect.left + panelW > window.innerWidth
+        ? Math.max(8, rect.right - panelW)
+        : rect.left;
+      el.style.top        = `${rect.bottom + 4}px`;
+      el.style.left       = `${Math.max(8, left)}px`;
+      el.style.maxWidth   = `${panelW}px`;
+      el.style.visibility = "visible";
+    }
+
+    // Run after paint so the panel element exists in the DOM
+    const raf = requestAnimationFrame(position);
+
+    function onScrollOrResize() { setOpen(false); }
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+
     function onDown(e: MouseEvent) {
       if (
-        panelRef.current  && !panelRef.current.contains(e.target as Node) &&
+        panelRef.current   && !panelRef.current.contains(e.target as Node) &&
         triggerRef.current && !triggerRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
       }
     }
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+      document.removeEventListener("mousedown", onDown);
+    };
   }, [open]);
 
   // When panel opens, initialize panel state from current value
@@ -362,12 +390,12 @@ export default function DateRangePicker({
         />
       </button>
 
-      {/* Panel */}
+      {/* Panel — fixed so it escapes overflow:hidden parents */}
       {open && (
         <div
           ref={panelRef}
-          className="absolute top-full mt-1 left-0 z-50 flex bg-white border border-border rounded-lg shadow-lg overflow-hidden"
-          style={{ minWidth: 500 }}
+          className="fixed flex bg-white border border-border rounded-lg shadow-lg overflow-hidden"
+          style={{ zIndex: 9999, minWidth: 320, top: 0, left: 0, visibility: "hidden" }}
         >
           {/* Preset sidebar */}
           <div className="w-36 shrink-0 border-r border-border p-2 space-y-0.5">
