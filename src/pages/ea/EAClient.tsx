@@ -15,11 +15,11 @@ import { toast } from "sonner";
 import {
   getClientMonths, getClientPnl, listClients, asDownloadUrl,
   getPendingAdjustments, approveAdjustment, rejectAdjustment, getEAFlags,
-  getVerificationFlags, resolveVerificationFlag,
+  getVerificationFlags, resolveVerificationFlag, approveMonthViaBackend,
   type PendingAdjustment, type EAFlagEnriched, type VerificationFlag,
 } from "@/lib/eaApi";
 import {
-  approveMonth, deleteOverride, getApproval, getNote, getOverrides,
+  deleteOverride, getApproval, getNote, getOverrides,
   saveNote, setFlagResolved, setOverride, unapproveMonth, EXPENSE_CATEGORIES,
 } from "@/lib/eaData";
 import { Button } from "@/components/ui/button";
@@ -477,8 +477,8 @@ function ApprovalCard({ schema, month, qc }: SectionProps) {
   const approvalQ = useQuery({ queryKey: key, queryFn: () => getApproval(schema, month) });
 
   const approve = useMutation({
-    mutationFn: () => approveMonth(schema, month),
-    onSuccess: () => { toast.success(`${monthLabel(month)} approved`); qc.invalidateQueries({ queryKey: key }); },
+    mutationFn: () => approveMonthViaBackend(schema, month),
+    onSuccess: () => { toast.success(`${monthLabel(month)} approved — report email sent`); qc.invalidateQueries({ queryKey: key }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not approve."),
   });
   const undo = useMutation({

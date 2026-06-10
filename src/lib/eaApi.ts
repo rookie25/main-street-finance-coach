@@ -344,3 +344,20 @@ export const resolveVerificationFlag = (schema: string, flagId: number) =>
     `/ea/client/${encodeURIComponent(schema)}/verification/${flagId}/resolve`,
     {},
   );
+
+// ── Month approval (via backend so email fires on approval) ──────────────────
+
+export interface EAApprovalRow {
+  id:            number;
+  client_schema: string;
+  month:         string;
+  approved_by:   string;
+  approved_at:   string;
+  notes:         string | null;
+}
+
+export const approveMonthViaBackend = (schema: string, month: string, notes?: string) =>
+  post<EAApprovalRow>(
+    `/ea/client/${encodeURIComponent(schema)}/approve-month`,
+    { month, notes: notes ?? null },
+  );
