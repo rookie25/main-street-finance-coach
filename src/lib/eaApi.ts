@@ -311,3 +311,36 @@ export const getEAFlags = (schema: string, month: string) =>
   get<{ flags: EAFlagEnriched[] }>(
     `/ea/client/${encodeURIComponent(schema)}/flags?month=${encodeURIComponent(month)}`,
   );
+
+// ── Monthly verification flags ────────────────────────────────────────────────
+
+export interface VerificationFlag {
+  id:         number;
+  severity:   "error" | "warning" | "info";
+  check_name: string;
+  message:    string;
+  amount:     number;
+  resolved:   boolean;
+  created_at: string;
+}
+
+export interface VerificationResult {
+  schema:        string;
+  period:        string;
+  error_count:   number;
+  warning_count: number;
+  info_count:    number;
+  has_blockers:  boolean;
+  flags:         VerificationFlag[];
+}
+
+export const getVerificationFlags = (schema: string, period: string) =>
+  get<VerificationResult>(
+    `/ea/client/${encodeURIComponent(schema)}/verification?period=${encodeURIComponent(period)}`,
+  );
+
+export const resolveVerificationFlag = (schema: string, flagId: number) =>
+  patch<{ ok: boolean }>(
+    `/ea/client/${encodeURIComponent(schema)}/verification/${flagId}/resolve`,
+    {},
+  );

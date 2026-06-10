@@ -8,14 +8,15 @@ import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle, Check, CheckCircle2, Download, FileText, Flag,
-  Loader2, Trash2, Undo2, XCircle,
+  Loader2, ShieldCheck, ShieldAlert, Trash2, Undo2, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   getClientMonths, getClientPnl, listClients, asDownloadUrl,
   getPendingAdjustments, approveAdjustment, rejectAdjustment, getEAFlags,
-  type PendingAdjustment, type EAFlagEnriched,
+  getVerificationFlags, resolveVerificationFlag,
+  type PendingAdjustment, type EAFlagEnriched, type VerificationFlag,
 } from "@/lib/eaApi";
 import {
   approveMonth, deleteOverride, getApproval, getNote, getOverrides,
@@ -104,6 +105,7 @@ export default function EAClient() {
           <div className="space-y-6">
             <EAMessagesCard schema={schema} />
             <PendingAdjustmentsCard schema={schema} qc={qc} />
+            <VerificationCard schema={schema} month={month} qc={qc} />
             <ApprovalCard schema={schema} month={month} qc={qc} />
             <NotesCard schema={schema} month={month} qc={qc} />
             <FlagsCard schema={schema} month={month} qc={qc} />
@@ -325,6 +327,147 @@ function PendingAdjustmentsCard({ schema, qc }: { schema: string; qc: ReturnType
   );
 }
 
+
+// --------------------------------------------------------------------------- //
+// Verification — automated monthly close checks
+// --------------------------------------------------------------------------- //
+function VerificationCard({ schema, month, qc }: SectionProps) {
+  const key = ["ea", "verification", schema, month];
+  const vQ = useQuery({
+    queryKey: key,
+    queryFn:  () => getVerificationFlags(schema, month),
+    enabled:  !!schema && !!month,
+  });
+
+  const resolve = useMutation({
+    mutationFn: (flagId: number) => resolveVerificationFlag(schema, flagId),
+    onSuccess: () => { toast.success("Flag resolved"); qc.invalidateQueries({ queryKey: key }); },
+    onError:   (e) => toast.error(e instanceof Error ? e.message : "Could not resolve flag."),
+  });
+
+  const result = vQ.data;
+
+  const statusColor = !result
+    ? "border-border"
+    : result.error_count > 0
+      ? "border-red-300 dark:border-red-800"
+      : result.warning_count > 0
+        ? "border-amber-300 dark:border-amber-800"
+        : "border-green-300 dark:border-green-800";
+
+  const StatusIcon = !result || (result.error_count === 0 && result.warning_count === 0)
+    ? ShieldCheck
+    : ShieldAlert;
+
+  const iconColor = !result
+    ? "text-muted-foreground"
+    : result.error_count > 0
+      ? "text-red-500"
+      : result.warning_count > 0
+        ? "text-amber-500"
+        : "text-green-500";
+
+  const statusLabel = !result
+    ? "Loading…"
+    : result.error_count > 0
+      ? `${result.error_count} error${result.error_count > 1 ? "s" : ""} — close blocked`
+      : result.warning_count > 0
+        ? `${result.warning_count} warning${result.warning_count > 1 ? "s" : ""}`
+        : "All checks passed";
+
+  const activeFlags = result?.flags.filter((f) => !f.resolved) ?? [];
+
+  return (
+    <Card className={statusColor}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <StatusIcon className={`h-4 w-4 ${iconColor}`} />
+          Verification
+          {result && (result.error_count > 0 || result.warning_count > 0) && (
+            <span className={`ml-auto text-xs font-normal ${iconColor}`}>{statusLabel}</span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {vQ.isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-3/4" />
+          </div>
+        ) : !result || activeFlags.length === 0 ? (
+          <p className={`text-sm ${result ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+            {result ? "No open issues for " + monthLabel(month) + "." : "No data."}
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {activeFlags.map((flag) => (
+              <VerificationFlagRow
+                key={flag.id}
+                flag={flag}
+                onResolve={() => resolve.mutate(flag.id)}
+                busy={resolve.isPending}
+              />
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const SEVERITY_STYLES: Record<string, string> = {
+  error:   "border-red-200 bg-red-50/30 dark:border-red-900/40 dark:bg-red-950/10",
+  warning: "border-amber-200 bg-amber-50/30 dark:border-amber-900/40 dark:bg-amber-950/10",
+  info:    "border-blue-200 bg-blue-50/20 dark:border-blue-900/40 dark:bg-blue-950/10",
+};
+
+const SEVERITY_TEXT: Record<string, string> = {
+  error:   "text-red-600 dark:text-red-400",
+  warning: "text-amber-600 dark:text-amber-400",
+  info:    "text-blue-600 dark:text-blue-400",
+};
+
+function VerificationFlagRow({
+  flag,
+  onResolve,
+  busy,
+}: {
+  flag:      VerificationFlag;
+  onResolve: () => void;
+  busy:      boolean;
+}) {
+  return (
+    <li className={`rounded-xl border p-3 text-sm flex items-start justify-between gap-3 ${SEVERITY_STYLES[flag.severity] ?? ""}`}>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <Badge
+            variant="outline"
+            className={`text-[10px] capitalize ${SEVERITY_TEXT[flag.severity] ?? ""}`}
+          >
+            {flag.severity}
+          </Badge>
+          <span className="text-xs text-muted-foreground truncate">{flag.check_name}</span>
+        </div>
+        <p className="text-xs">{flag.message}</p>
+        {flag.amount !== 0 && (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {flag.amount.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+          </p>
+        )}
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="shrink-0 h-7 text-xs"
+        disabled={busy}
+        onClick={onResolve}
+      >
+        {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
+        Resolve
+      </Button>
+    </li>
+  );
+}
 
 // --------------------------------------------------------------------------- //
 // Approval — "<Month> Looks Good ✅"
