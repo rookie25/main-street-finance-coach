@@ -1,7 +1,7 @@
 // Client Portal — Tax Center (Component 4).
 // Upcoming CDTFA deadlines, monthly sales tax history.
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CalendarClock, AlertTriangle, CheckCircle2, PiggyBank } from "lucide-react";
 import { getTax } from "@/lib/clientApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,6 +51,38 @@ export default function AppTax() {
                 </div>
               </div>
             ) : null}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Income-tax set-aside recommendation ────────────────── */}
+      {data?.income_tax_setaside && data.income_tax_setaside.recommended_monthly > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <PiggyBank className="h-4 w-4" /> Suggested Tax Set-Aside
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold text-primary">
+                  {fmt(data.income_tax_setaside.recommended_monthly)}
+                  <span className="text-sm font-normal text-muted-foreground"> /mo</span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Set aside about{" "}
+                  <span className="font-medium">{fmt(data.income_tax_setaside.set_aside_by_deadline)}</span>{" "}
+                  before {new Date(data.income_tax_setaside.next_deadline + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs shrink-0">
+                {data.income_tax_setaside.planning_rate} rate
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              {data.income_tax_setaside.disclaimer}
+            </p>
           </CardContent>
         </Card>
       )}
