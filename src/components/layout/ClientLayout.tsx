@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, LogOut, Bell,
+  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FolderOpen, LogOut, Bell,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { to: "/app/receipts",  label: "Receipts",  icon: Camera,                       badge: false },
   { to: "/app/expenses",  label: "Expenses",  icon: Receipt,                      badge: false },
   { to: "/app/reports",   label: "Reports",   icon: FileBarChart2,               badge: false },
+  { to: "/app/documents", label: "Documents", icon: FolderOpen,                  badge: false },
   { to: "/app/tax",       label: "Tax",       icon: Calculator,                  badge: false },
   { to: "/app/messages",  label: "Messages",  icon: MessageCircle,               badge: true  },
   { to: "/app/chat",      label: "Ask AI",    icon: MessageSquare,               badge: false },
