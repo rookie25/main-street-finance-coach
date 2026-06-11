@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, AlertTriangle, CheckCircle, FileText, CreditCard, Wallet, ShoppingBasket, Wrench, Building2, Users, User, MoreHorizontal, Loader2 } from "lucide-react";
+import { X, AlertTriangle, CheckCircle, FileText, CreditCard, Wallet, ShoppingBasket, Wrench, Building2, Users, User, MoreHorizontal, Loader2, TrendingDown, Activity } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { ClientNotification } from "@/lib/clientApi";
@@ -26,9 +26,12 @@ const ICON_COLOR: Record<string, string> = {
 };
 
 function getIcon(type: string) {
-  if (type === "report_ready")  return FileText;
-  if (type === "amex_past_due") return CreditCard;
-  if (type === "low_balance")   return Wallet;
+  if (type === "report_ready")   return FileText;
+  if (type === "amex_past_due")  return CreditCard;
+  if (type === "low_balance")    return Wallet;
+  if (type === "revenue_trend")  return TrendingDown;
+  if (type === "cash_runway")    return Wallet;
+  if (type === "vendor_anomaly") return Activity;
   return AlertTriangle;
 }
 
