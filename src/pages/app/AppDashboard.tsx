@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, Info, RefreshCw, Sun,
 } from "lucide-react";
-import { getDashboard, getMorningBriefing, getMe, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
+import { getDashboard, getMorningBriefing, getMe, getConnectionHealth, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ── formatters (unchanged) ────────────────────────────────────────────────────
@@ -143,6 +143,12 @@ export default function AppDashboard() {
     staleTime: 10 * 60 * 1000,
   });
 
+  const { data: connHealth } = useQuery({
+    queryKey: ["client", "connection-health"],
+    queryFn:  getConnectionHealth,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const firstName = meData?.full_name?.split(" ")[0];
   const pnl       = data?.pnl;
   const net       = pnl ? pnl.net_income : 0;
@@ -181,6 +187,32 @@ export default function AppDashboard() {
 
       {/* ── Page content ───────────────────────────────────────────────── */}
       <div className="p-4 space-y-3 flex-1">
+
+        {/* ── Data-source health pill ──────────────────────────────────── */}
+        {connHealth && connHealth.overall !== "unknown" && (() => {
+          const ov = connHealth.overall;
+          const dot = ov === "healthy" ? "#16A34A" : ov === "stale" ? "#D97706" : "#DC2626";
+          const label = ov === "healthy"
+            ? "Data sources up to date"
+            : ov === "stale"
+            ? "Catching up on recent data"
+            : "A data source needs attention";
+          const detail = connHealth.connections
+            .map((c) => c.source)
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <div
+              className="flex items-center gap-2 text-[11px] text-muted-foreground px-3 py-1.5 rounded-lg"
+              style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+              title={connHealth.connections.map((c) => `${c.source}: ${c.message}`).join("\n")}
+            >
+              <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ background: dot }} />
+              <span className="font-medium" style={{ color: "#475569" }}>{label}</span>
+              {detail && <span className="truncate">— {detail}</span>}
+            </div>
+          );
+        })()}
 
         {/* Alerts — full width above grid */}
         {data?.alerts && data.alerts.length > 0 && (

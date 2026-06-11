@@ -254,6 +254,36 @@ export const getMe = () =>
 export const getDashboard = (month?: string) =>
   get<DashboardData>(`/client/dashboard${month ? `?month=${encodeURIComponent(month)}` : ""}`);
 
+export interface ConnectionHealth {
+  overall: "healthy" | "stale" | "error" | "unknown";
+  connections: {
+    source:           string;
+    status:           "healthy" | "stale" | "error";
+    last_synced_at:   string | null;
+    hours_since_sync: number | null;
+    message:          string;
+  }[];
+}
+
+export const getConnectionHealth = () =>
+  get<ConnectionHealth>("/client/connection-health");
+
+// Download every monthly statement as a single zip (auth header required, so we
+// fetch a blob and trigger the download rather than a plain link).
+export async function downloadAllDocuments(): Promise<void> {
+  const res = await fetch(`${BASE}/client/documents/export`, { headers: await authHeader() });
+  if (!res.ok) throw new ApiError(`Export failed (${res.status})`, res.status);
+  const blob = await res.blob();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url;
+  a.download = "financial_records.zip";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const getExpenses = (month?: string) =>
   get<ExpensesData>(`/client/expenses${month ? `?month=${encodeURIComponent(month)}` : ""}`);
 
