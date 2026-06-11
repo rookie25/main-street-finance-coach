@@ -411,16 +411,40 @@ export default function AppExpenses() {
           </button>
         </div>
       ) : (
-        <ul className="space-y-2">
-          {filteredExpenses.map((e) => (
+        (() => {
+          const renderRow = (e: ExpenseItem) => (
             <ExpenseRow key={e.id} expense={e}
               onEdit={() => openEdit(e)}
               onDelete={() => setDeletingExpense(e)}
               isFlagged={flaggedIds.has(e.id)}
               isFlagging={flaggingId === e.id}
               onToggleFlag={() => handleToggleFlag(e)} />
-          ))}
-        </ul>
+          );
+          const actual    = filteredExpenses.filter((e) => !e.recurring);
+          const recurring = filteredExpenses.filter((e) => e.recurring);
+          return (
+            <div className="space-y-4">
+              {actual.length > 0 && (
+                <div>
+                  {recurring.length > 0 && (
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      Actual this period
+                    </p>
+                  )}
+                  <ul className="space-y-2">{actual.map(renderRow)}</ul>
+                </div>
+              )}
+              {recurring.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Recurring (monthly) · scheduled
+                  </p>
+                  <ul className="space-y-2">{recurring.map(renderRow)}</ul>
+                </div>
+              )}
+            </div>
+          );
+        })()
       )}
 
       {/* ── Upload sheet ─────────────────────────────────────────── */}
