@@ -519,6 +519,40 @@ export const getReceipts = (start?: string, end?: string) => {
   return get<ReceiptsData>(`/client/receipts${s ? `?${s}` : ""}`);
 };
 
+// ── Document sharing with the CPA ─────────────────────────────────────────────
+export interface SharedDocument {
+  id:           string;
+  from:         "you" | "cpa";
+  filename:     string | null;
+  content_type: string | null;
+  size_bytes:   number | null;
+  note:         string | null;
+  created_at:   string | null;
+  download_url: string | null;
+  seen_by_cpa:  boolean | null;
+}
+
+export const getSharedDocuments = () =>
+  get<{ documents: SharedDocument[]; total: number }>("/client/documents/shared");
+
+export async function shareDocument(file: File, note: string): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const token    = data.session?.access_token;
+  const form     = new FormData();
+  form.append("file", file);
+  if (note) form.append("note", note);
+  const res = await fetch(`${BASE}/client/documents/share`, {
+    method:  "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body:    form,
+  });
+  if (!res.ok) {
+    let detail = `Upload failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+}
+
 // ── Expense flagging ──────────────────────────────────────────────────────────
 
 export const getFlaggedExpenses = () =>

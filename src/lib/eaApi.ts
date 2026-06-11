@@ -199,6 +199,33 @@ export interface ClientAlertsData {
 
 export const getClientsAlerts = () => get<ClientAlertsData[]>("/ea/clients/alerts");
 
+// ── Document sharing (client <-> CPA) ─────────────────────────────────────────
+export interface EASharedDocument {
+  id:           string;
+  from:         "client" | "you";
+  filename:     string | null;
+  content_type: string | null;
+  size_bytes:   number | null;
+  note:         string | null;
+  created_at:   string | null;
+  download_url: string | null;
+}
+
+export const getClientDocuments = (schema: string) =>
+  get<{ documents: EASharedDocument[]; total: number }>(`/ea/clients/${encodeURIComponent(schema)}/documents`);
+
+export async function shareDocumentToClient(schema: string, file: File, note: string): Promise<void> {
+  const form = new FormData();
+  form.append("file", file);
+  if (note) form.append("note", note);
+  const res = await fetch(`${BASE}/ea/clients/${encodeURIComponent(schema)}/documents/share`, {
+    method:  "POST",
+    headers: await authHeader(),
+    body:    form,
+  });
+  if (!res.ok) throw new ApiError(`Upload failed (${res.status})`, res.status);
+}
+
 // ── Worksheet ─────────────────────────────────────────────────────────────────
 
 export interface PLCategoryRow {

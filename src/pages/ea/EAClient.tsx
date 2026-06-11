@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import EAMessagesCard from "@/components/ea/EAMessagesCard";
+import EADocumentsCard from "@/components/ea/EADocumentsCard";
 import EAWorksheet from "@/components/ea/EAWorksheet";
 import DateRangePicker, {
   computePreset,
@@ -104,6 +105,7 @@ export default function EAClient() {
           <ReportViewer schema={schema} month={month} />
           <div className="space-y-6">
             <EAMessagesCard schema={schema} />
+            <EADocumentsCard schema={schema} />
             <PendingAdjustmentsCard schema={schema} qc={qc} />
             <VerificationCard schema={schema} month={month} qc={qc} />
             <ApprovalCard schema={schema} month={month} qc={qc} />
