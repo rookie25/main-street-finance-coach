@@ -45,6 +45,7 @@ const EAProfile = lazy(() => import("./pages/ea/EAProfile"));
 const AppLogin     = lazy(() => import("./pages/app/AppLogin"));
 const AppDashboard = lazy(() => import("./pages/app/AppDashboard"));
 const AppExpenses  = lazy(() => import("./pages/app/AppExpenses"));
+const AppReceipts  = lazy(() => import("./pages/app/AppReceipts"));
 const AppReports   = lazy(() => import("./pages/app/AppReports"));
 const AppTax       = lazy(() => import("./pages/app/AppTax"));
 const AppChat      = lazy(() => import("./pages/app/AppChat"));
@@ -123,6 +124,7 @@ const App = () => (
                 <Route element={<ClientLayout />}>
                   <Route path="/app"          element={<AppDashboard />} />
                   <Route path="/app/expenses" element={<AppExpenses />} />
+                  <Route path="/app/receipts" element={<AppReceipts />} />
                   <Route path="/app/reports"  element={<AppReports />} />
                   <Route path="/app/tax"      element={<AppTax />} />
                   <Route path="/app/messages" element={<AppMessages />} />

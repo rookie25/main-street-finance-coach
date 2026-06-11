@@ -486,6 +486,34 @@ export async function uploadReceipt(file: File): Promise<ReceiptUploadResult> {
 export const confirmReceipt = (payload: ReceiptConfirmPayload) =>
   post<ReceiptConfirmResult>("/client/confirm-receipt", payload);
 
+// ── Receipts log (capture history, separate from the books) ───────────────────
+export interface ClientReceipt {
+  id:         string;
+  vendor:     string | null;
+  amount:     number | null;
+  date:       string | null;
+  category:   string | null;
+  source:     string;
+  status:     "logged" | "pending_review";
+  image_url:  string | null;
+  created_at: string | null;
+}
+
+export interface ReceiptsData {
+  start:    string;
+  end:      string;
+  receipts: ClientReceipt[];
+  total:    number;
+}
+
+export const getReceipts = (start?: string, end?: string) => {
+  const qs = new URLSearchParams();
+  if (start) qs.set("start", start);
+  if (end)   qs.set("end", end);
+  const s = qs.toString();
+  return get<ReceiptsData>(`/client/receipts${s ? `?${s}` : ""}`);
+};
+
 // ── Expense flagging ──────────────────────────────────────────────────────────
 
 export const getFlaggedExpenses = () =>
