@@ -81,6 +81,7 @@ export interface ExpenseItem {
   source:            string;
   has_override:      boolean;
   pending?:          boolean;
+  recurring?:        boolean;
 }
 
 export interface ExpensesData {
