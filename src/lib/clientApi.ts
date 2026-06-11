@@ -80,6 +80,7 @@ export interface ExpenseItem {
   expense_type:      string;
   source:            string;
   has_override:      boolean;
+  pending?:          boolean;
 }
 
 export interface ExpensesData {

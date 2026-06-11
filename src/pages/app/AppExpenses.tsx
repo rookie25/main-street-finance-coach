@@ -642,7 +642,15 @@ function ExpenseRow({
           : "border-border",
     )}>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate">{expense.vendor}</div>
+        <div className="text-sm font-medium truncate flex items-center gap-1.5">
+          <span className="truncate">{expense.vendor}</span>
+          {expense.pending && (
+            <span className="shrink-0 text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
+                  title="Just added — will be finalized in tonight's update">
+              Pending
+            </span>
+          )}
+        </div>
         <div className="text-xs text-muted-foreground mt-0.5">
           {needsCategory ? (
             <button onClick={onEdit} className="text-amber-600 underline-offset-2 hover:underline">
