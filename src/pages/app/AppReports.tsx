@@ -2,8 +2,9 @@
 // DateRangePicker → signed PDF URLs for each month in range → inline viewer + download.
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, FileText } from "lucide-react";
-import { getReportsRange, asDownloadUrl, type ReportForRange } from "@/lib/clientApi";
+import { Download, FileText, Archive, Loader2, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+import { getReportsRange, asDownloadUrl, downloadAllDocuments, type ReportForRange } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import DateRangePicker, {
@@ -19,6 +20,20 @@ function monthLabel(m: string) {
 
 export default function AppReports() {
   const [range, setRange] = useState<DateRange>(() => computePreset("this_month"));
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportAll() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await downloadAllDocuments();
+      toast.success("Your records are downloading");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed — please try again");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["client", "reports", toISODate(range.start), toISODate(range.end)],
@@ -38,6 +53,22 @@ export default function AppReports() {
           onChange={setRange}
           defaultPreset="this_month"
         />
+      </div>
+
+      {/* ── Your records are always yours ──────────────────────── */}
+      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+        <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground">Your records are always yours</p>
+          <p className="text-xs text-muted-foreground">
+            Download every statement to keep or hand to any accountant — anytime.
+          </p>
+        </div>
+        <Button size="sm" onClick={handleExportAll} disabled={exporting} className="shrink-0">
+          {exporting
+            ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Preparing…</>
+            : <><Archive className="mr-1.5 h-3.5 w-3.5" /> Export all</>}
+        </Button>
       </div>
 
       {isError && (
