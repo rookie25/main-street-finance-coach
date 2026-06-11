@@ -287,8 +287,13 @@ export async function downloadAllDocuments(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-export const getExpenses = (month?: string) =>
-  get<ExpensesData>(`/client/expenses${month ? `?month=${encodeURIComponent(month)}` : ""}`);
+export const getExpenses = (opts?: { month?: string; start?: string; end?: string }) => {
+  const qs = new URLSearchParams();
+  if (opts?.start && opts?.end) { qs.set("start", opts.start); qs.set("end", opts.end); }
+  else if (opts?.month)         { qs.set("month", opts.month); }
+  const s = qs.toString();
+  return get<ExpensesData>(`/client/expenses${s ? `?${s}` : ""}`);
+};
 
 export const getReports = (month?: string) =>
   get<ReportLinks>(`/client/reports${month ? `?month=${encodeURIComponent(month)}` : ""}`);

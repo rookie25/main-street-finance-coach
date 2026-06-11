@@ -28,12 +28,18 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DateRangePicker, { computePreset, toISODate, type DateRange } from "@/components/DateRangePicker";
 import { cn } from "@/lib/utils";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+function shortDate(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 function currentMonth() { return new Date().toISOString().slice(0, 7); }
 function monthLabel(m: string) {
@@ -57,7 +63,10 @@ export default function AppExpenses() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraRef    = useRef<HTMLInputElement>(null);
 
-  const [month, setMonth]               = useState(currentMonth);
+  const [range, setRange] = useState<DateRange>(() => computePreset("this_month"));
+  const startISO = toISODate(range.start);
+  const endISO   = toISODate(range.end);
+  const expensesKey = ["client", "expenses", startISO, endISO] as const;
   const [uploadState, setUploadState]   = useState<UploadState>({ phase: "idle" });
   const [showUploadSheet, setShowUploadSheet] = useState(false);
 
@@ -89,9 +98,8 @@ export default function AppExpenses() {
   const clientSchema = meData?.client_schema ?? "";
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey:             ["client", "expenses", month],
-    queryFn:              () => getExpenses(month),
-    enabled:              !!month,
+    queryKey:             expensesKey,
+    queryFn:              () => getExpenses({ start: startISO, end: endISO }),
     staleTime:            60_000,
     refetchOnWindowFocus: false,
   });
@@ -146,7 +154,7 @@ export default function AppExpenses() {
         toast.success("Already in your books ✅ — this receipt was previously logged. No action needed.", { duration: 4000 });
       } else {
         toast.success("Receipt saved.");
-        qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+        qc.invalidateQueries({ queryKey: expensesKey });
       }
       setShowUploadSheet(false);
       setUploadState({ phase: "idle" });
@@ -190,7 +198,7 @@ export default function AppExpenses() {
     }),
 
     onMutate: async (vars) => {
-      const queryKey = ["client", "expenses", month] as const;
+      const queryKey = expensesKey as const;
       await qc.cancelQueries({ queryKey });
       const previous = qc.getQueryData(queryKey);
 
@@ -214,12 +222,12 @@ export default function AppExpenses() {
           ? "Saved — your advisor has been notified."
           : "Saved.",
       );
-      qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+      qc.invalidateQueries({ queryKey: expensesKey });
     },
 
     onError: (e, _vars, context) => {
       if (context?.previous) {
-        qc.setQueryData(["client", "expenses", month], context.previous);
+        qc.setQueryData(expensesKey, context.previous);
       }
       toast.error(e instanceof Error ? e.message : "Save failed — please try again.");
     },
@@ -234,7 +242,7 @@ export default function AppExpenses() {
         toast.success("Deletion sent to your advisor for review.");
       } else {
         toast.success("Expense deleted.");
-        qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+        qc.invalidateQueries({ queryKey: expensesKey });
       }
       setDeletingExpense(null);
     },
@@ -256,7 +264,7 @@ export default function AppExpenses() {
         toast.success("Already in your books ✅ — no action needed.", { duration: 4000 });
       } else {
         toast.success("Expense added.");
-        qc.invalidateQueries({ queryKey: ["client", "expenses", month] });
+        qc.invalidateQueries({ queryKey: expensesKey });
       }
       setShowManual(false);
       setManualVendor(""); setManualAmount(""); setManualDate(today()); setManualCategory("");
@@ -325,8 +333,6 @@ export default function AppExpenses() {
       <div className="flex items-center justify-between">
         <h1 className="font-display text-xl font-semibold text-primary">Expenses</h1>
         <div className="flex items-center gap-2">
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
-            className="text-xs border border-border rounded-lg px-2 py-1.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
           <button onClick={() => cameraRef.current?.click()}
             className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" title="Take photo">
             <Camera className="h-4 w-4" />
@@ -342,11 +348,16 @@ export default function AppExpenses() {
         </div>
       </div>
 
+      {/* ── Date range ──────────────────────────────────────────── */}
+      <div className="flex justify-end">
+        <DateRangePicker value={range} onChange={setRange} defaultPreset="this_month" />
+      </div>
+
       {/* ── Summary bar ─────────────────────────────────────────── */}
       {!isLoading && data && (
         <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3">
           <span className="text-sm text-muted-foreground">
-            {data.total} {data.total === 1 ? "expense" : "expenses"} · {monthLabel(month)}
+            {data.total} {data.total === 1 ? "expense" : "expenses"} · {shortDate(startISO)} – {shortDate(endISO)}
           </span>
           <span className="font-semibold">{fmt(total)}</span>
         </div>
@@ -396,7 +407,7 @@ export default function AppExpenses() {
         <p className="text-sm text-destructive">{error instanceof Error ? error.message : "Failed to load"}</p>
       ) : expenses.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-sm text-muted-foreground">No expenses for {monthLabel(month)}.</p>
+          <p className="text-sm text-muted-foreground">No expenses in this range.</p>
           <button onClick={() => cameraRef.current?.click()} className="mt-3 text-xs text-primary underline-offset-2 hover:underline">
             Upload a receipt to get started
           </button>
