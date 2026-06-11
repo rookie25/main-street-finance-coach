@@ -119,10 +119,21 @@ export interface TaxEntry {
   tax_collected: number;
 }
 
+export interface IncomeTaxSetAside {
+  recommended_monthly:     number;
+  based_on_avg_net_income: number;
+  months_analyzed:         number;
+  planning_rate:           string;
+  next_deadline:           string;
+  set_aside_by_deadline:   number;
+  disclaimer:              string;
+}
+
 export interface TaxData {
   upcoming_deadlines:    TaxDeadline[];
   monthly_history:       TaxEntry[];
   most_recent_payable:   { month: string; amount: number } | null;
+  income_tax_setaside?:  IncomeTaxSetAside | null;
 }
 
 export interface ChatResponse {
