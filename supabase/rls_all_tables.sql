@@ -1,63 +1,64 @@
 -- ============================================================================
--- SEC-02 remediation — codify Row-Level Security on all backend-only tables.
+-- SEC-02 remediation — lock every backend-only table to service-role only.
 --
--- Context: a live anon-key probe (2026-06-10) found three tables world-readable
--- (transactions=7,698 rows, expenses=122, fixed_costs=21). All other financial
--- tables already had RLS enforced. This migration:
---   1. Hard-locks the three exposed tables (enable RLS + revoke anon grants).
---   2. Idempotently asserts RLS on every backend-only financial table so the
---      posture is reproducible from source control and cannot silently regress.
+-- A live audit (2026-06-10, via direct Postgres) found the real exposure was
+-- NOT disabled RLS. It was:
+--   1. Permissive "USING (true)" policies for the `public` role on
+--      transactions, expenses, agent_posts, customers, dashboard_metrics,
+--      inventory_alerts, reviews (ALL ops) and fixed_costs (SELECT) — i.e. the
+--      internet could READ, INSERT, UPDATE, DELETE and TRUNCATE those tables.
+--   2. Default anon/authenticated INSERT/UPDATE/DELETE/TRUNCATE grants on ~48
+--      tables (Supabase default), only partially gated by RLS.
 --
--- SAFETY: every backend-only table here is read/written ONLY via the FastAPI
--- service-role key, which BYPASSES RLS. Enabling RLS with no policy = "service
--- role only", which is the intended design. The frontend never reads these
--- tables directly (verified by grepping supabase.from(...) in src/).
+-- This migration locks every base table that the frontend does NOT use directly
+-- to service-role only: enable RLS + revoke all anon/authenticated grants, and
+-- drop the permissive public policies. The backend uses the service_role key,
+-- which has BYPASSRLS and its own grants, so it is unaffected.
 --
--- DO NOT add these portal tables here — the frontend reads them with the
--- authenticated/anon JWT and they already have correct policies:
---   messages, leads, client_users, ea_users, expense_overrides, client_briefings,
---   ea_flags, ea_approvals, ea_category_overrides, ea_notes, ea_clients
+-- The KEEP list below is the set of tables the React app reads/writes directly
+-- with the anon/authenticated JWT (verified by grepping supabase.from(...) in
+-- src/). Their RLS policies (is_ea / is_client_schema / self / anon-insert)
+-- remain the enforcement boundary and are left untouched.
 --
--- Idempotent: safe to re-run. Enabling RLS twice is a no-op.
+-- Idempotent. Safe to re-run.
 -- ============================================================================
 
--- ── 1. The three confirmed-exposed tables: enable RLS + revoke anon reads ──
-alter table public.transactions enable row level security;
-alter table public.fixed_costs  enable row level security;
-alter table public.expenses     enable row level security;
-
-revoke select on public.transactions from anon, authenticated;
-revoke select on public.fixed_costs  from anon, authenticated;
-revoke select on public.expenses     from anon, authenticated;
-
--- ── 2. Assert RLS on every other backend-only financial table (idempotent) ──
 do $$
 declare
   t text;
-  backend_only text[] := array[
-    'monthly_expenses', 'plaid_transactions', 'cash_balances', 'monthly_tax',
-    'fixed_assets', 'equity_movements', 'equity_baseline', 'merchant_rules',
-    'unknown_charges', 'monthly_close_tasks', 'pending_adjustments',
-    'client_ai_memory', 'bounce_detection_log', 'monthly_verification_flags',
-    'receipts_raw', 'expense_audit_log', 'morning_briefings', 'mileage_log',
-    'quickbooks_balance_sheet', 'square_order_items', 'plaid_connections',
-    'clients', 'ea_signup_requests', 'ea_adjustments', 'onboarding_sessions'
+  keep text[] := array[
+    'client_users','ea_users','ea_clients','ea_flags','ea_approvals',
+    'ea_category_overrides','ea_notes','expense_overrides','messages','leads'
   ];
 begin
-  foreach t in array backend_only loop
-    if exists (
-      select 1 from information_schema.tables
-      where table_schema = 'public' and table_name = t
-    ) then
-      execute format('alter table public.%I enable row level security;', t);
-      execute format('revoke select on public.%I from anon;', t);
-    end if;
+  for t in
+    select c.relname
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind = 'r' and c.relname <> all(keep)
+  loop
+    execute format('alter table public.%I enable row level security;', t);
+    execute format('revoke all on public.%I from anon, authenticated;', t);
   end loop;
 end $$;
 
--- ── 3. Verification query (run after applying) ──────────────────────────────
--- Expect rls_enabled = true for every row:
---   select c.relname, c.relrowsecurity as rls_enabled
---   from pg_class c join pg_namespace n on n.oid = c.relnamespace
---   where n.nspname='public' and c.relkind='r' and not c.relrowsecurity;
--- (Should return ZERO rows once this migration + the portal RLS files are applied.)
+-- Drop the permissive public USING(true) policies that allowed read/write.
+drop policy if exists "Allow all operations" on public.transactions;
+drop policy if exists "Allow all operations" on public.expenses;
+drop policy if exists "Allow public read"    on public.fixed_costs;
+drop policy if exists "Allow all operations" on public.agent_posts;
+drop policy if exists "Allow all operations" on public.customers;
+drop policy if exists "Allow all operations" on public.dashboard_metrics;
+drop policy if exists "Allow all operations" on public.inventory_alerts;
+drop policy if exists "Allow all operations" on public.reviews;
+
+-- ── Verification (expect ZERO rows from each) ───────────────────────────────
+-- Permissive public policies left:
+--   select tablename, policyname from pg_policies where schemaname='public'
+--     and roles && array['public','anon']::name[] and qual='true';
+-- anon/authenticated grants on financial tables left:
+--   select * from information_schema.role_table_grants where table_schema='public'
+--     and grantee in ('anon','authenticated')
+--     and table_name in ('transactions','expenses','monthly_expenses','cash_balances');
+-- Base tables without RLS:
+--   select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace
+--     where n.nspname='public' and c.relkind='r' and not c.relrowsecurity;
