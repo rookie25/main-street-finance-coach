@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, FileBarChart2, Calculator, MessageCircle, MessageSquare, LogOut, Bell,
+  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, LogOut, Bell,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
@@ -15,6 +15,7 @@ import NotificationsPanel from "@/components/client/NotificationsPanel";
 
 const NAV_ITEMS = [
   { to: "/app",           label: "Dashboard", icon: LayoutDashboard, end: true,  badge: false },
+  { to: "/app/receipts",  label: "Receipts",  icon: Camera,                       badge: false },
   { to: "/app/expenses",  label: "Expenses",  icon: Receipt,                      badge: false },
   { to: "/app/reports",   label: "Reports",   icon: FileBarChart2,               badge: false },
   { to: "/app/tax",       label: "Tax",       icon: Calculator,                  badge: false },
