@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 
 const BASE = (import.meta.env.VITE_RAILWAY_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-const STORAGE_KEY = "dl_admin_key";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -411,7 +410,9 @@ function AdminLogin({ onSuccess }: { onSuccess: (key: string) => void }) {
     setError("");
     try {
       await apiFetch("/admin/leads", trimmed);
-      sessionStorage.setItem(STORAGE_KEY, trimmed);
+      // SEC-06: the admin key is held in memory only (React state) — never in
+      // sessionStorage/localStorage — so an XSS payload cannot exfiltrate a
+      // persisted credential. Trade-off: re-entry is required after a reload.
       onSuccess(trimmed);
     } catch {
       setError("Invalid password.");
@@ -453,9 +454,8 @@ function AdminLogin({ onSuccess }: { onSuccess: (key: string) => void }) {
 // ── Main dashboard ────────────────────────────────────────────────────────────
 
 export default function AdminPanel() {
-  const [adminKey, setAdminKey] = useState<string | null>(() => {
-    try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
-  });
+  // SEC-06: in-memory only — not restored from storage on load.
+  const [adminKey, setAdminKey] = useState<string | null>(null);
   const [tab,          setTab]          = useState<"leads" | "clients">("leads");
   const [leads,        setLeads]        = useState<Lead[]>([]);
   const [clients,      setClients]      = useState<Client[]>([]);
@@ -487,7 +487,6 @@ export default function AdminPanel() {
   }
 
   function signOut() {
-    try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     setAdminKey(null);
   }
 
