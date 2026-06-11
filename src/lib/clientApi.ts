@@ -142,7 +142,8 @@ export interface ChatResponse {
 }
 
 export interface ClientNotification {
-  type:     "report_ready" | "tax_deadline" | "amex_past_due" | "low_balance" | "unknown_charge" | "monthly_close";
+  type:     "report_ready" | "tax_deadline" | "amex_past_due" | "low_balance" | "unknown_charge"
+          | "monthly_close" | "revenue_trend" | "vendor_anomaly" | "cash_runway";
   severity: "urgent" | "warning" | "info";
   title:    string;
   body:     string;
