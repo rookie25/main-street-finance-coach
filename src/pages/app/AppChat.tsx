@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { sendChat, ApiError } from "@/lib/clientApi";
+import { sendChat, streamChat, ApiError } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -168,8 +168,22 @@ export default function AppChat() {
             ? { ...m, content: `[Context: User is asking about ${fmtMonth(selectedMonth)}] ${m.content}` }
             : m,
         );
-      const resp = await sendChat(apiMessages, selectedMonth);
-      setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
+      // Stream tokens live; fall back to the non-streaming endpoint on any error.
+      let acc = "";
+      try {
+        await streamChat(apiMessages, selectedMonth, (chunk) => {
+          acc += chunk;
+          setMessages([...nextMessages, { role: "assistant", content: acc }]);
+        });
+        if (!acc.trim()) {
+          const resp = await sendChat(apiMessages, selectedMonth);
+          setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
+        }
+      } catch (streamErr) {
+        if (streamErr instanceof ApiError && streamErr.status === 429) throw streamErr;
+        const resp = await sendChat(apiMessages, selectedMonth);
+        setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
+      }
     } catch (e) {
       if (e instanceof ApiError && e.status === 429) {
         toast.warning("Slow down a little — try again in a minute");
@@ -274,8 +288,8 @@ export default function AppChat() {
           );
         })}
 
-        {/* Typing indicator */}
-        {loading && <TypingIndicator />}
+        {/* Typing indicator — only until the streaming assistant bubble appears */}
+        {loading && messages[messages.length - 1]?.role !== "assistant" && <TypingIndicator />}
 
         <div ref={bottomRef} />
       </div>

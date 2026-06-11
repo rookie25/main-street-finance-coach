@@ -298,6 +298,44 @@ export const sendChat = (
 ) =>
   post<ChatResponse>("/client/chat", { messages, month });
 
+// Streaming chat — reads Server-Sent Events from /client/chat/stream and calls
+// onChunk(text) as tokens arrive. Throws on transport/stream error so the caller
+// can fall back to the non-streaming sendChat().
+export async function streamChat(
+  messages: { role: "user" | "assistant"; content: string }[],
+  month: string | undefined,
+  onChunk: (text: string) => void,
+): Promise<void> {
+  const res = await fetch(`${BASE}/client/chat/stream`, {
+    method:  "POST",
+    headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body:    JSON.stringify({ messages, month }),
+  });
+  if (res.status === 429) throw new ApiError("Too many requests", 429);
+  if (!res.ok || !res.body) throw new ApiError(`Stream failed (${res.status})`, res.status);
+
+  const reader  = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf("\n\n")) >= 0) {
+      const evt = buf.slice(0, idx);
+      buf = buf.slice(idx + 2);
+      const dataLine = evt.split("\n").find((l) => l.startsWith("data:"));
+      if (!dataLine) continue;
+      let payload: { type?: string; text?: string; detail?: string };
+      try { payload = JSON.parse(dataLine.slice(5).trim()); } catch { continue; }
+      if (payload.type === "text" && payload.text) onChunk(payload.text);
+      else if (payload.type === "error") throw new ApiError(payload.detail || "stream error", 502);
+      else if (payload.type === "done") return;
+    }
+  }
+}
+
 export interface MorningBriefing {
   content:    string;
   data:       Record<string, unknown> | null;
