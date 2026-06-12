@@ -226,6 +226,24 @@ export async function shareDocumentToClient(schema: string, file: File, note: st
   if (!res.ok) throw new ApiError(`Upload failed (${res.status})`, res.status);
 }
 
+// ── QuickBooks export ─────────────────────────────────────────────────────────
+export async function downloadQuickBooks(schema: string, month: string): Promise<void> {
+  const res = await fetch(
+    `${BASE}/ea/clients/${encodeURIComponent(schema)}/quickbooks-export?month=${encodeURIComponent(month)}`,
+    { headers: await authHeader() },
+  );
+  if (!res.ok) throw new ApiError(`Export failed (${res.status})`, res.status);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${schema}_${month}_quickbooks.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ── Worksheet ─────────────────────────────────────────────────────────────────
 
 export interface PLCategoryRow {
