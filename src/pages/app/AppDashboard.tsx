@@ -47,18 +47,18 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
   return (
     <div
       className="bg-white overflow-hidden"
-      style={{ border: "1px solid #E2E8F0", borderLeft: "3px solid #6366F1", borderRadius: "0 12px 12px 0" }}
+      style={{ border: "1px solid #E2E8F0", borderLeft: "3px solid #5B5BD6", borderRadius: "0 12px 12px 0" }}
     >
       {/* Header row */}
       <div className="px-4 pt-4 pb-2 flex items-start gap-3">
         <div
           className="flex items-center justify-center shrink-0"
-          style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(196,122,44,0.1)" }}
+          style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(91,91,214,0.1)" }}
         >
-          <Sun className="h-4 w-4" style={{ color: "#C47A2C" }} />
+          <Sun className="h-4 w-4" style={{ color: "#5B5BD6" }} />
         </div>
         <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2 flex-wrap">
-          <span className="font-bold text-sm" style={{ color: "#0F0721" }}>
+          <span className="font-bold text-sm" style={{ color: "#14161C" }}>
             Good morning{name ? `, ${name}` : ""}
           </span>
           <span className="text-xs shrink-0" style={{ color: "#94A3B8" }}>{today}</span>
@@ -72,7 +72,7 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
           return (
             <p key={i} className="text-sm" style={{ color: "#64748B", lineHeight: 1.65 }}>
               {parts.map((part, j) =>
-                j % 2 === 1 ? <strong key={j} style={{ color: "#0F0721" }}>{part}</strong> : part
+                j % 2 === 1 ? <strong key={j} style={{ color: "#14161C" }}>{part}</strong> : part
               )}
             </p>
           );
@@ -82,7 +82,7 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
       {/* Tip line */}
       {tipLine && (
         <div className="px-4 py-2.5" style={{ borderTop: "1px solid #F1F5F9" }}>
-          <p className="text-xs font-semibold" style={{ color: "#6366F1" }}>
+          <p className="text-xs font-semibold" style={{ color: "#5B5BD6" }}>
             {tipLine.replace(/\*\*(.*?)\*\*/g, "$1")}
           </p>
         </div>
@@ -165,7 +165,7 @@ export default function AppDashboard() {
         className="sticky top-0 z-10 flex items-center justify-between px-4 py-3"
         style={{ background: "#fff", borderBottom: "1px solid #E2E8F0" }}
       >
-        <h1 className="font-display" style={{ fontWeight: 700, color: "#0F0721", fontSize: 18 }}>
+        <h1 className="font-display" style={{ fontWeight: 700, color: "#14161C", fontSize: 18 }}>
           Dashboard
         </h1>
         <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function AppDashboard() {
             <div className="bg-white" style={{ border: "1px solid #E2E8F0", borderRadius: 12 }}>
               {/* Header */}
               <div className="px-4 pt-4 pb-2 flex items-center justify-between gap-2">
-                <span className="font-bold text-sm" style={{ color: "#0F0721" }}>
+                <span className="font-bold text-sm" style={{ color: "#14161C" }}>
                   P&L Summary — {monthLabel(month)}
                 </span>
                 <span
@@ -272,7 +272,7 @@ export default function AppDashboard() {
                     <PnlRow label="Total Expenses"  value={`(${fmt(pnl.total_expenses)})`} red />
                     <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: 10, marginTop: 4 }}>
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm" style={{ color: "#0F0721" }}>Net Income</span>
+                        <span className="font-bold text-sm" style={{ color: "#14161C" }}>Net Income</span>
                         <span
                           className="font-bold flex items-center gap-1"
                           style={{ fontSize: 18, color: net >= 0 ? "#16A34A" : "#DC2626" }}
@@ -299,7 +299,7 @@ export default function AppDashboard() {
           <div className="order-1 md:order-2 flex flex-col gap-2.5">
 
             {/* 1 — Net income hero */}
-            <div style={{ background: "#0F0721", borderRadius: 12, padding: 14 }}>
+            <div style={{ background: "#14161C", borderRadius: 12, padding: 14 }}>
               <div
                 style={{
                   fontSize: 9, color: "rgba(255,255,255,0.3)",
@@ -329,7 +329,7 @@ export default function AppDashboard() {
               {isLoading ? (
                 <Skeleton className="h-6 w-28 mt-1" />
               ) : (
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#0F0721", marginTop: 2 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#14161C", marginTop: 2 }}>
                   {pnl ? fmt(pnl.net_revenue) : "—"}
                 </div>
               )}
@@ -352,7 +352,7 @@ export default function AppDashboard() {
                   <div
                     style={{
                       fontSize: 22, fontWeight: 700, marginTop: 2,
-                      color: lowCash ? "#DC2626" : "#0F0721",
+                      color: lowCash ? "#DC2626" : "#14161C",
                     }}
                   >
                     {totalCash !== null ? fmtFull(totalCash) : "—"}
@@ -404,7 +404,7 @@ function PnlRow({
       <span style={{ color: "#64748B" }}>{label}</span>
       <span
         style={{
-          color: red ? "#DC2626" : muted ? "#94A3B8" : "#0F0721",
+          color: red ? "#DC2626" : muted ? "#94A3B8" : "#14161C",
           fontWeight: bold || red ? 600 : 400,
         }}
       >
