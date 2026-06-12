@@ -9,6 +9,7 @@ import {
   getIntegrationsForBusiness,
 } from "@/lib/integrations";
 import { getSquareAuthUrl } from "@/lib/onboardApi";
+import PlaidConnectButton from "./PlaidConnectButton";
 
 // Record<integrationId, value — api key text, "oauth_connected", or csv filename>
 export type IntegrationValues = Record<string, string>;
@@ -62,12 +63,16 @@ function IntegrationCard({
   onSave,
   onDraftChange,
   onOAuthConnect,
+  connectSlot,
 }: {
   integration: Integration;
   cardState: CardState;
   onSave: (value: string) => void;
   onDraftChange: (draft: string) => void;
   onOAuthConnect?: () => Promise<void>;
+  // Custom connect UI for SDK-based flows (e.g. Plaid Link modal). When present,
+  // it replaces the default redirect-OAuth button for an oauth-method card.
+  connectSlot?: React.ReactNode;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -108,7 +113,10 @@ function IntegrationCard({
       {/* Connection UI */}
       {integration.method === "oauth" && cardState.status !== "connected" && (
         <div className="flex items-center gap-2 flex-wrap">
-          {onOAuthConnect ? (
+          {connectSlot ? (
+            // SDK-based flow (Plaid Link) — custom button supplied by the parent.
+            connectSlot
+          ) : onOAuthConnect ? (
             // Live OAuth flow
             <Button
               type="button"
@@ -320,6 +328,22 @@ export default function StepIntegrations({
     return undefined;
   }
 
+  // SDK-based connect UI (Plaid Link modal). Returned as a slot so the generic
+  // IntegrationCard stays redirect-agnostic.
+  function connectSlotFor(integ: Integration): React.ReactNode | undefined {
+    if (integ.id === "plaid") {
+      return (
+        <PlaidConnectButton
+          token={token}
+          onConnecting={() => setConnecting("plaid")}
+          onConnected={() => saveValue("plaid", "oauth_connected")}
+          onError={(m) => setCardError("plaid", m)}
+        />
+      );
+    }
+    return undefined;
+  }
+
   const connectedCount = [...primary, ...secondary].filter(
     (integ) => getCardState(integ.id).status === "connected",
   ).length;
@@ -348,6 +372,7 @@ export default function StepIntegrations({
             onSave={(v) => saveValue(integ.id, v)}
             onDraftChange={(d) => updateDraft(integ.id, d)}
             onOAuthConnect={oauthHandler(integ)}
+            connectSlot={connectSlotFor(integ)}
           />
         ))}
       </div>
