@@ -78,3 +78,33 @@ export function getSquareAuthUrl(token: string): Promise<{ auth_url: string }> {
     handle<{ auth_url: string }>(r),
   );
 }
+
+// ── Plaid Link ────────────────────────────────────────────────────────────────
+// createPlaidLinkToken → open Plaid Link with the returned link_token →
+// exchangePlaidPublicToken on success. The access token never touches the
+// browser; the backend exchanges + encrypts it server-side.
+
+export function createPlaidLinkToken(token: string): Promise<{ link_token: string; expiration: string | null }> {
+  return fetch(`${BASE}/onboard/plaid/link-token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  }).then((r) => handle<{ link_token: string; expiration: string | null }>(r));
+}
+
+export interface PlaidExchangePayload {
+  token: string;
+  public_token: string;
+  institution_name?: string;
+  accounts?: unknown[];
+}
+
+export function exchangePlaidPublicToken(
+  payload: PlaidExchangePayload,
+): Promise<{ connected: boolean; institution_name: string }> {
+  return fetch(`${BASE}/onboard/plaid/exchange`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then((r) => handle<{ connected: boolean; institution_name: string }>(r));
+}
