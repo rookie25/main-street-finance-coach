@@ -30,7 +30,7 @@ export default function Home() {
       {/* HERO */}
       <section className="relative -mt-20 pt-28 pb-24 md:pt-40 md:pb-32 overflow-hidden bg-gradient-hero text-primary-foreground">
         <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{
-          backgroundImage: "radial-gradient(circle at 20% 20%, hsl(28 64% 47%) 0%, transparent 40%), radial-gradient(circle at 80% 70%, hsl(147 50% 60%) 0%, transparent 45%)",
+          backgroundImage: "radial-gradient(circle at 20% 20%, hsl(240 56% 60%) 0%, transparent 40%), radial-gradient(circle at 80% 70%, hsl(245 60% 68%) 0%, transparent 45%)",
         }} />
         <div className="container-prose relative grid lg:grid-cols-2 gap-16 items-center">
           <Reveal>
