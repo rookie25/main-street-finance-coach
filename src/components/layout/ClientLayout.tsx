@@ -2,7 +2,7 @@
 // Header at top, scrollable content in the middle, bottom navigation tab bar.
 // Deliberately separate from SiteLayout and EALayout.
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FolderOpen, LogOut, Bell,
 } from "lucide-react";
@@ -80,7 +80,7 @@ export default function ClientLayout() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* ── Top header ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between" style={{ background: "#0F0721" }}>
-        <div>
+        <Link to="/app" className="block -m-1 p-1 rounded-lg" aria-label="Go to dashboard">
           <div className="text-[10px] uppercase tracking-[0.18em] leading-none font-semibold">
             <span className="text-white">Desired</span>{" "}
             <span style={{ color: "#C47A2C" }}>Labs</span>
@@ -88,7 +88,7 @@ export default function ClientLayout() {
           <div className="font-display text-base font-semibold leading-tight" style={{ color: "rgba(255,255,255,0.5)" }}>
             {meData?.business_name ?? "Your Business"}
           </div>
-        </div>
+        </Link>
         <div className="flex items-center gap-1">
           <button
             onClick={() => {

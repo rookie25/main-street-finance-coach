@@ -2,7 +2,7 @@
 // status dots beside an outlet for the per-client view. Deliberately separate
 // from the marketing SiteLayout: its own chrome, no SiteNav/SiteFooter.
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle, LayoutDashboard } from "lucide-react";
 import { listClients, getClientsSummary, getClientsAlerts, type EAClient, type ClientSummary, type ClientAlertsData } from "@/lib/eaApi";
@@ -102,12 +102,14 @@ export default function EALayout() {
       >
         {/* Header */}
         <div className="px-5 py-5" style={{ borderBottom: DIVIDER }}>
-          <div className="text-[10px] uppercase tracking-[0.2em] font-semibold" style={{ color: "#C47A2C" }}>
-            Desired Labs
-          </div>
-          <div className="font-display text-lg text-white" style={{ fontWeight: 700 }}>
-            EA Portal
-          </div>
+          <Link to="/ea" className="block" aria-label="Go to dashboard">
+            <div className="text-[10px] uppercase tracking-[0.2em] font-semibold" style={{ color: "#C47A2C" }}>
+              Desired Labs
+            </div>
+            <div className="font-display text-lg text-white" style={{ fontWeight: 700 }}>
+              EA Portal
+            </div>
+          </Link>
         </div>
 
         {/* Client list */}
