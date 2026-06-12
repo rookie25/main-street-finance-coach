@@ -31,22 +31,22 @@ function NeonPanel() {
   return (
     <div
       className="hidden lg:flex flex-1 flex-col items-center justify-center px-12 relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #0F0721 0%, #1A0A3C 40%, #0D1A3C 100%)" }}
+      style={{ background: "linear-gradient(135deg, #14161C 0%, #1B1A2E 40%, #141A2C 100%)" }}
     >
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: [
-            "radial-gradient(ellipse at 80% 10%, rgba(147,51,234,0.25) 0%, transparent 50%)",
+            "radial-gradient(ellipse at 80% 10%, rgba(99,102,241,0.25) 0%, transparent 50%)",
             "radial-gradient(ellipse at 10% 80%, rgba(59,130,246,0.20) 0%, transparent 50%)",
-            "radial-gradient(ellipse at 50% 0%, rgba(196,122,44,0.15) 0%, transparent 40%)",
+            "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 40%)",
           ].join(", "),
         }}
       />
       <div className="relative text-center mb-10">
         <div className="font-display text-3xl font-semibold mb-1">
-          <span style={{ color: "#6366F1" }}>Desired</span>{" "}
-          <span style={{ color: "#C47A2C" }}>Labs</span>
+          <span style={{ color: "#5B5BD6" }}>Desired</span>{" "}
+          <span style={{ color: "#7C7CF0" }}>Labs</span>
         </div>
         <div className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>AI-powered financial operations</div>
       </div>
@@ -193,7 +193,7 @@ export default function AppLogin() {
                 <Button
                   type="submit"
                   className="w-full text-white"
-                  style={{ background: "linear-gradient(135deg, #6366F1, #8B5CF6)" }}
+                  style={{ background: "linear-gradient(135deg, #5B5BD6, #8B5CF6)" }}
                   disabled={submitting || loading}
                 >
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -235,7 +235,7 @@ export default function AppLogin() {
                   <Button
                     type="submit"
                     className="w-full text-white"
-                    style={{ background: "linear-gradient(135deg, #6366F1, #8B5CF6)" }}
+                    style={{ background: "linear-gradient(135deg, #5B5BD6, #8B5CF6)" }}
                     disabled={resetBusy}
                   >
                     {resetBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
