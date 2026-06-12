@@ -50,6 +50,38 @@
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  /* ── "Crisp Light" — modern light theme, scoped to the portal app + auth.
+     Refines the base light theme: ink-black primary, indigo accent, lighter
+     borders, Inter headings, slightly rounder corners. The marketing site keeps
+     the original :root tokens. ─────────────────────────────────────────────── */
+  .app-theme {
+    --background: 220 20% 98%;          /* #F7F8FA */
+    --foreground: 225 18% 9%;           /* ink #14161C */
+    --card: 0 0% 100%;
+    --card-foreground: 225 18% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 225 18% 9%;
+    --primary: 225 18% 9%;              /* ink-black buttons */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 240 60% 62%;
+    --secondary: 225 20% 96%;
+    --secondary-foreground: 225 18% 9%;
+    --muted: 225 20% 96%;
+    --muted-foreground: 220 9% 46%;     /* #6B7280 */
+    --accent: 240 56% 60%;              /* indigo #5B5BD6 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 225 16% 92%;              /* #E7E9EE */
+    --input: 225 16% 92%;
+    --ring: 240 56% 60%;
+    --radius: 0.875rem;
+  }
+  .app-theme :is(h1, h2, h3, h4, h5) {
+    font-family: 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.012em;
+  }
 }
 
 @layer base {

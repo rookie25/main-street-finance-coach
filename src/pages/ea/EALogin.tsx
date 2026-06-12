@@ -126,7 +126,7 @@ export default function EALogin() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="app-theme min-h-screen flex bg-background">
       {/* Left — form */}
       <div className="flex-1 flex items-center justify-center px-6" style={{ background: "#F8FAFC" }}>
         <div className="w-full max-w-sm">

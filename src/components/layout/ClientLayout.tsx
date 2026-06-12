@@ -77,15 +77,15 @@ export default function ClientLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="app-theme min-h-screen bg-background flex flex-col">
       {/* ── Top header ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between" style={{ background: "#0F0721" }}>
+      <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between bg-card border-b border-border">
         <Link to="/app" className="block -m-1 p-1 rounded-lg" aria-label="Go to dashboard">
           <div className="text-[10px] uppercase tracking-[0.18em] leading-none font-semibold">
-            <span className="text-white">Desired</span>{" "}
-            <span style={{ color: "#C47A2C" }}>Labs</span>
+            <span className="text-foreground">Desired</span>{" "}
+            <span className="text-accent">Labs</span>
           </div>
-          <div className="font-display text-base font-semibold leading-tight" style={{ color: "rgba(255,255,255,0.5)" }}>
+          <div className="text-base font-semibold leading-tight text-foreground mt-0.5">
             {meData?.business_name ?? "Your Business"}
           </div>
         </Link>
@@ -97,21 +97,11 @@ export default function ClientLayout() {
               if (isOpening) void markNotificationsRead();
             }}
             title="Notifications"
-            className="relative p-2 rounded-lg transition-colors"
-            style={{ background: "rgba(196,122,44,0.15)", border: "1px solid rgba(196,122,44,0.25)" }}
+            className="relative p-2 rounded-xl bg-secondary border border-border hover:bg-muted transition-colors"
           >
-            <Bell className="h-4 w-4" style={{ color: "#C47A2C" }} />
+            <Bell className="h-4 w-4 text-foreground" />
             {unreadNotifications > 0 && (
-              <span
-                style={{
-                  position: "absolute", top: "-6px", right: "-6px",
-                  minWidth: "18px", height: "18px",
-                  background: "#C47A2C", borderRadius: "9px",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "10px", fontWeight: 700, color: "#fff",
-                  padding: "0 4px", border: "2px solid #0F0721",
-                }}
-              >
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center px-1 border-2 border-card">
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}
               </span>
             )}
@@ -119,8 +109,7 @@ export default function ClientLayout() {
           <button
             onClick={handleSignOut}
             title={`Sign out (${user?.email})`}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: "rgba(255,255,255,0.4)" }}
+            className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-colors"
           >
             <LogOut className="h-4 w-4" />
           </button>
