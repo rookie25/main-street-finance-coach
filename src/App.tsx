@@ -48,6 +48,7 @@ const AppExpenses  = lazy(() => import("./pages/app/AppExpenses"));
 const AppReceipts  = lazy(() => import("./pages/app/AppReceipts"));
 const AppReports   = lazy(() => import("./pages/app/AppReports"));
 const AppDocuments = lazy(() => import("./pages/app/AppDocuments"));
+const AppCPA       = lazy(() => import("./pages/app/AppCPA"));
 const AppTax       = lazy(() => import("./pages/app/AppTax"));
 const AppChat      = lazy(() => import("./pages/app/AppChat"));
 const AppMessages  = lazy(() => import("./pages/app/AppMessages"));
@@ -127,10 +128,12 @@ const App = () => (
                   <Route path="/app/expenses" element={<AppExpenses />} />
                   <Route path="/app/receipts" element={<AppReceipts />} />
                   <Route path="/app/reports"  element={<AppReports />} />
-                  <Route path="/app/documents" element={<AppDocuments />} />
+                  <Route path="/app/cpa"      element={<AppCPA />} />
                   <Route path="/app/tax"      element={<AppTax />} />
-                  <Route path="/app/messages" element={<AppMessages />} />
                   <Route path="/app/chat"     element={<AppChat />} />
+                  {/* Consolidated into the CPA hub — keep old links working */}
+                  <Route path="/app/messages"  element={<Navigate to="/app/cpa" replace />} />
+                  <Route path="/app/documents" element={<Navigate to="/app/cpa?tab=documents" replace />} />
                 </Route>
               </Route>
             </Route>

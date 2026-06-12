@@ -18,9 +18,8 @@ const NAV_ITEMS = [
   { to: "/app/receipts",  label: "Receipts",  icon: Camera,                       badge: false },
   { to: "/app/expenses",  label: "Expenses",  icon: Receipt,                      badge: false },
   { to: "/app/reports",   label: "Reports",   icon: FileBarChart2,               badge: false },
-  { to: "/app/documents", label: "Documents", icon: FolderOpen,                  badge: false },
   { to: "/app/tax",       label: "Tax",       icon: Calculator,                  badge: false },
-  { to: "/app/messages",  label: "Messages",  icon: MessageCircle,               badge: true  },
+  { to: "/app/cpa",       label: "CPA",       icon: MessageCircle,               badge: true  },
   { to: "/app/chat",      label: "Ask AI",    icon: MessageSquare,               badge: false },
 ] as const;
 
