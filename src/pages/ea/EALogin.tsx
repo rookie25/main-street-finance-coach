@@ -1,7 +1,7 @@
 // EA Portal login — email/password or Google SSO against Supabase Auth.
 // Includes inline forgot-password flow and a link to the self-service signup page.
 import { useEffect, useState } from "react";
-import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEAAuth } from "@/hooks/useEAAuth";
@@ -72,6 +72,7 @@ function NeonPanel() {
 export default function EALogin() {
   const { session, loading, signIn, signInWithGoogle, resetPassword } = useEAAuth();
   const location  = useLocation();
+  const navigate  = useNavigate();
   const from = (location.state as { from?: string } | null)?.from ?? "/ea";
 
   const [searchParams]               = useSearchParams();
@@ -95,7 +96,10 @@ export default function EALogin() {
     setSubmitting(true);
     try {
       await signIn(email.trim(), password);
-      // Session watcher (<Navigate> above) handles the redirect — no second navigate() here.
+      // signIn resolved => auth succeeded and the session is set synchronously,
+      // so navigate immediately. Don't rely on the reactive <Navigate> re-render
+      // (that lag is what required a second click).
+      navigate(from, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign-in failed. Check your credentials.");
     } finally {
