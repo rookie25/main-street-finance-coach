@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, FileText, Archive, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { getReportsRange, asDownloadUrl, downloadAllDocuments, type ReportForRange } from "@/lib/clientApi";
+import { getReportsRange, asDownloadUrl, downloadAllDocuments, getMe, type ReportForRange } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import DateRangePicker, {
@@ -21,6 +21,8 @@ function monthLabel(m: string) {
 export default function AppReports() {
   const [range, setRange] = useState<DateRange>(() => computePreset("this_month"));
   const [exporting, setExporting] = useState(false);
+  const { data: meData } = useQuery({ queryKey: ["client", "me"], queryFn: getMe, staleTime: 10 * 60 * 1000 });
+  const schema = meData?.client_schema || "report";
 
   async function handleExportAll() {
     if (exporting) return;
@@ -102,13 +104,13 @@ export default function AppReports() {
 
       {/* ── Report cards ────────────────────────────────────────── */}
       {!isLoading && reports.map((report) => (
-        <ReportCard key={report.month} report={report} />
+        <ReportCard key={report.month} report={report} schema={schema} />
       ))}
     </div>
   );
 }
 
-function ReportCard({ report }: { report: ReportForRange }) {
+function ReportCard({ report, schema }: { report: ReportForRange; schema: string }) {
   const { month, pnl_pdf_url, balance_sheet_pdf_url } = report;
   const [expanded, setExpanded] = useState(true);
 
@@ -123,7 +125,7 @@ function ReportCard({ report }: { report: ReportForRange }) {
           {balance_sheet_pdf_url && (
             <Button variant="outline" size="sm" asChild>
               <a
-                href={asDownloadUrl(balance_sheet_pdf_url, `groundstack_${month}_bs.pdf`)}
+                href={asDownloadUrl(balance_sheet_pdf_url, `${schema}_${month}_bs.pdf`)}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -133,7 +135,7 @@ function ReportCard({ report }: { report: ReportForRange }) {
           )}
           <Button variant="outline" size="sm" asChild>
             <a
-              href={asDownloadUrl(pnl_pdf_url, `groundstack_${month}_pl.pdf`)}
+              href={asDownloadUrl(pnl_pdf_url, `${schema}_${month}_pl.pdf`)}
               target="_blank"
               rel="noopener noreferrer"
             >

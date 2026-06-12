@@ -2,9 +2,10 @@
 // Chat interface backed by POST /client/chat which injects Mark's live
 // financial data into Claude's system prompt. History is session-only.
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { sendChat, streamChat, ApiError } from "@/lib/clientApi";
+import { sendChat, streamChat, getMe, ApiError } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -90,25 +91,33 @@ export default function AppChat() {
 
   const monthOptions = getMonthOptions();
 
-  // Purge chat keys older than 3 months on mount
+  // Chat history is namespaced per client so it never collides across accounts
+  // on a shared device. (For Groundstack this resolves to the original
+  // "groundstack_chat_*" key, so existing history is preserved.)
+  const { data: meData } = useQuery({ queryKey: ["client", "me"], queryFn: getMe, staleTime: 10 * 60 * 1000 });
+  const schema = meData?.client_schema || "";
+  const keyFor = (m: string) => `${schema}_chat_${m}`;
+
+  // Purge this client's chat keys older than 3 months (once schema is known).
   useEffect(() => {
+    if (!schema) return;
     const now = new Date();
     const cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
     const cutoff = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, "0")}`;
+    const prefix = `${schema}_chat_`;
     Object.keys(localStorage)
-      .filter((k) => k.startsWith("groundstack_chat_"))
+      .filter((k) => k.startsWith(prefix))
       .forEach((k) => {
-        const month = k.replace("groundstack_chat_", "");
+        const month = k.replace(prefix, "");
         if (month < cutoff) localStorage.removeItem(k);
       });
-  }, []);
+  }, [schema]);
 
-  // Restore saved history when selectedMonth changes
+  // Restore saved history when the month (or the resolved client) changes.
   useEffect(() => {
-    if (!selectedMonth) return;
-    const key = `groundstack_chat_${selectedMonth}`;
+    if (!selectedMonth || !schema) return;
     try {
-      const saved = localStorage.getItem(key);
+      const saved = localStorage.getItem(keyFor(selectedMonth));
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -120,17 +129,16 @@ export default function AppChat() {
     } catch { /* ignore corrupt data */ }
     setMessages([]);
     setIsRestored(false);
-  }, [selectedMonth]);
+  }, [selectedMonth, schema]);
 
   // Persist messages to localStorage (exclude system separators, cap at 50)
   useEffect(() => {
-    if (!selectedMonth || messages.length === 0) return;
-    const key = `groundstack_chat_${selectedMonth}`;
+    if (!selectedMonth || !schema || messages.length === 0) return;
     try {
       const toSave = messages.filter((m) => m.role !== "system").slice(-50);
-      localStorage.setItem(key, JSON.stringify(toSave));
+      localStorage.setItem(keyFor(selectedMonth), JSON.stringify(toSave));
     } catch { /* ignore storage errors */ }
-  }, [messages, selectedMonth]);
+  }, [messages, selectedMonth, schema]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -142,7 +150,7 @@ export default function AppChat() {
   }
 
   function handleNewConversation() {
-    if (selectedMonth) localStorage.removeItem(`groundstack_chat_${selectedMonth}`);
+    if (selectedMonth && schema) localStorage.removeItem(keyFor(selectedMonth));
     setMessages([]);
     setIsRestored(false);
     toast.success("Conversation cleared");
