@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 
 import {
-  getClientMonths, getClientPnl, listClients, asDownloadUrl,
+  getClientMonths, getClientPnl, listClients, asDownloadUrl, downloadQuickBooks,
   getPendingAdjustments, approveAdjustment, rejectAdjustment, getEAFlags,
   getVerificationFlags, resolveVerificationFlag, approveMonthViaBackend,
   type PendingAdjustment, type EAFlagEnriched, type VerificationFlag,
@@ -145,6 +145,20 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
   const links = pnlQ.data!;
   const pnlDownload = asDownloadUrl(links.pnl_pdf_url, `${schema}_${month}_pl.pdf`);
 
+  const [qbBusy, setQbBusy] = useState(false);
+  async function handleQuickBooks() {
+    if (qbBusy) return;
+    setQbBusy(true);
+    try {
+      await downloadQuickBooks(schema, month);
+      toast.success("QuickBooks journal CSV downloading");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setQbBusy(false);
+    }
+  }
+
   return (
     <Card className="overflow-hidden">
       <Tabs defaultValue="pnl" className="w-full">
@@ -154,11 +168,18 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
             <TabsTrigger value="bs">Balance Sheet</TabsTrigger>
             <TabsTrigger value="worksheet">Worksheet</TabsTrigger>
           </TabsList>
-          <Button asChild variant="outline" size="sm">
-            <a href={pnlDownload}>
-              <Download className="mr-2 h-4 w-4" /> Download P&amp;L
-            </a>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleQuickBooks} disabled={qbBusy}
+              title="Download the month's P&L as a QuickBooks-importable journal CSV">
+              {qbBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+              QuickBooks
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={pnlDownload}>
+                <Download className="mr-2 h-4 w-4" /> Download P&amp;L
+              </a>
+            </Button>
+          </div>
         </div>
 
         <TabsContent value="pnl" className="m-0">
