@@ -10,8 +10,8 @@ import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
-const SIDEBAR_BG = "#0D1B2A";
-const DIVIDER    = "1px solid rgba(255,255,255,0.07)";
+const SIDEBAR_BG = "#FFFFFF";
+const DIVIDER    = "1px solid #E7E9EE";
 
 function fmtMoney(n: number | null): string {
   if (n === null) return "";
@@ -94,7 +94,7 @@ export default function EALayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="app-theme min-h-screen bg-background flex">
       {/* ── Sidebar ──────────────────────────────────────────────── */}
       <aside
         className="w-72 shrink-0 flex flex-col"
@@ -103,10 +103,10 @@ export default function EALayout() {
         {/* Header */}
         <div className="px-5 py-5" style={{ borderBottom: DIVIDER }}>
           <Link to="/ea" className="block" aria-label="Go to dashboard">
-            <div className="text-[10px] uppercase tracking-[0.2em] font-semibold" style={{ color: "#C47A2C" }}>
+            <div className="text-[10px] uppercase tracking-[0.2em] font-semibold" style={{ color: "#5B5BD6" }}>
               Desired Labs
             </div>
-            <div className="font-display text-lg text-white" style={{ fontWeight: 700 }}>
+            <div className="font-display text-lg text-foreground" style={{ fontWeight: 700 }}>
               EA Portal
             </div>
           </Link>
@@ -116,13 +116,13 @@ export default function EALayout() {
         <nav className="flex-1 overflow-y-auto p-3">
           <div
             className="px-2 pb-2 text-[10px] font-semibold uppercase"
-            style={{ color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em" }}
+            style={{ color: "#B6BBC6", letterSpacing: "0.12em" }}
           >
             Clients
           </div>
 
           {isLoading && (
-            <div className="flex items-center gap-2 px-2 py-3 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+            <div className="flex items-center gap-2 px-2 py-3 text-sm" style={{ color: "#9AA0AE" }}>
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </div>
           )}
@@ -135,7 +135,7 @@ export default function EALayout() {
           )}
 
           {clients?.length === 0 && (
-            <div className="px-2 py-3 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+            <div className="px-2 py-3 text-sm" style={{ color: "#9AA0AE" }}>
               No clients yet.
             </div>
           )}
@@ -146,8 +146,8 @@ export default function EALayout() {
               <div
                 className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
                 style={isActive
-                  ? { background: "rgba(255,255,255,0.95)", color: "#0F0721" }
-                  : { color: "rgba(255,255,255,0.85)" }}
+                  ? { background: "#EDEEFB", color: "#14161C" }
+                  : { color: "#48505F" }}
               >
                 <LayoutDashboard className="h-4 w-4 shrink-0" />
                 <span className="text-sm font-semibold">Dashboard</span>
@@ -155,7 +155,7 @@ export default function EALayout() {
             )}
           </NavLink>
 
-          <div className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.4)" }}>
+          <div className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9AA0AE" }}>
             Clients
           </div>
 
@@ -175,7 +175,7 @@ export default function EALayout() {
                       <div
                         className="px-3 py-2.5 rounded-lg"
                         style={isActive
-                          ? { background: "rgba(255,255,255,0.95)" }
+                          ? { background: "#EDEEFB" }
                           : { background: "transparent" }
                         }
                       >
@@ -186,14 +186,14 @@ export default function EALayout() {
                             className="inline-block h-2 w-2 rounded-full shrink-0"
                             style={{
                               backgroundColor: isActive
-                                ? (c.status === "active" ? "#16A34A" : "#C47A2C")
-                                : (c.status === "active" ? "#6366F1" : "#C47A2C"),
+                                ? (c.status === "active" ? "#16A34A" : "#5B5BD6")
+                                : (c.status === "active" ? "#5B5BD6" : "#5B5BD6"),
                             }}
                           />
                           <span
                             className="truncate flex-1 text-sm"
                             style={{
-                              color: isActive ? "#0D1B2A" : "rgba(255,255,255,0.85)",
+                              color: isActive ? "#14161C" : "#48505F",
                               fontWeight: isActive ? 700 : 600,
                             }}
                           >
@@ -203,7 +203,7 @@ export default function EALayout() {
                           {unread > 0 && (
                             <span
                               className="flex items-center gap-0.5 shrink-0 text-[9px] font-bold"
-                              style={{ color: isActive ? "#6366F1" : "rgba(255,255,255,0.5)" }}
+                              style={{ color: isActive ? "#5B5BD6" : "#6B7280" }}
                             >
                               <MessageCircle className="h-3 w-3" />
                               {unread}
@@ -213,7 +213,7 @@ export default function EALayout() {
                           {c.pending_count > 0 && (
                             <span
                               className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold shrink-0"
-                              style={{ background: "#C47A2C", color: "#fff" }}
+                              style={{ background: "#5B5BD6", color: "#fff" }}
                             >
                               {c.pending_count}
                             </span>
@@ -224,7 +224,7 @@ export default function EALayout() {
                         {summary && (summary.net_revenue !== null || summary.net_income !== null || summary.last_sync) && (
                           <div
                             className="mt-0.5 text-xs leading-snug pl-4"
-                            style={{ color: isActive ? "#64748B" : "rgba(255,255,255,0.45)" }}
+                            style={{ color: isActive ? "#64748B" : "#9AA0AE" }}
                           >
                             {(summary.net_revenue !== null || summary.net_income !== null) && (
                               <span>
@@ -236,7 +236,7 @@ export default function EALayout() {
                             {summary.last_sync && (
                               <span
                                 className="block"
-                                style={{ color: isActive ? "#94A3B8" : "rgba(255,255,255,0.3)" }}
+                                style={{ color: isActive ? "#94A3B8" : "#AEB4C0" }}
                               >
                                 Synced: {fmtSyncDate(summary.last_sync)}
                               </span>
@@ -277,15 +277,15 @@ export default function EALayout() {
 
         {/* Footer */}
         <div className="p-3" style={{ borderTop: DIVIDER }}>
-          <div className="px-2 pb-2 text-xs truncate" style={{ color: "rgba(255,255,255,0.3)" }}>
+          <div className="px-2 pb-2 text-xs truncate" style={{ color: "#AEB4C0" }}>
             {user?.email}
           </div>
           <NavLink
             to="/ea/profile"
             className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors mb-1"
             style={({ isActive }) => ({
-              color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
-              background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
+              color: isActive ? "#fff" : "#6B7280",
+              background: isActive ? "#EDEEFB" : "transparent",
             })}
           >
             <UserCircle className="h-4 w-4 shrink-0" />
@@ -294,7 +294,7 @@ export default function EALayout() {
           <button
             onClick={handleSignOut}
             className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors"
-            style={{ color: "rgba(255,255,255,0.5)" }}
+            style={{ color: "#6B7280" }}
           >
             <LogOut className="h-4 w-4 shrink-0" />
             Sign out
