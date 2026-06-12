@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FolderOpen, LogOut, Bell,
+  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FileText, LogOut, Bell,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
@@ -13,7 +13,12 @@ import { cn } from "@/lib/utils";
 import { getNotifications, getMe, markNotificationsRead } from "@/lib/clientApi";
 import NotificationsPanel from "@/components/client/NotificationsPanel";
 
-const NAV_ITEMS = [
+type NavItem = {
+  to: string; label: string; icon: typeof LayoutDashboard;
+  end?: boolean; badge?: boolean;
+};
+
+const BASE_NAV: NavItem[] = [
   { to: "/app",           label: "Dashboard", icon: LayoutDashboard, end: true,  badge: false },
   { to: "/app/receipts",  label: "Receipts",  icon: Camera,                       badge: false },
   { to: "/app/expenses",  label: "Expenses",  icon: Receipt,                      badge: false },
@@ -21,7 +26,28 @@ const NAV_ITEMS = [
   { to: "/app/tax",       label: "Tax",       icon: Calculator,                  badge: false },
   { to: "/app/cpa",       label: "CPA",       icon: MessageCircle,               badge: true  },
   { to: "/app/chat",      label: "Ask AI",    icon: MessageSquare,               badge: false },
-] as const;
+];
+
+const INVOICES_ITEM: NavItem = { to: "/app/invoices", label: "Invoices", icon: FileText, badge: false };
+
+// Invoicing is central for service & construction businesses but irrelevant to
+// POS / food / retail (they take payment at the point of sale). Show the tab
+// only where it earns its place; hide it everywhere else to keep the bar lean.
+function showsInvoices(businessType: string | null | undefined): boolean {
+  const t = (businessType ?? "").toLowerCase();
+  const noInvoice = /coffee|cafe|café|restaurant|food|bakery|bar|retail|shop|store|grocer|boutique|ecommerce|e-commerce|salon|spa/;
+  if (noInvoice.test(t)) return false;
+  return true; // construction, services, consulting, trades, and unknown all invoice
+}
+
+function buildNav(businessType: string | null | undefined): NavItem[] {
+  if (!showsInvoices(businessType)) return BASE_NAV;
+  // Insert Invoices right after Reports so AR sits next to financials.
+  const items = [...BASE_NAV];
+  const at = items.findIndex((i) => i.to === "/app/reports") + 1;
+  items.splice(at, 0, INVOICES_ITEM);
+  return items;
+}
 
 export default function ClientLayout() {
   const { user, signOut } = useClientAuth();
@@ -45,6 +71,7 @@ export default function ClientLayout() {
   });
   const unreadNotifications = notificationsData?.unread_count ?? 0;
   const notificationsList   = notificationsData?.notifications ?? [];
+  const navItems            = buildNav(meData?.business_type);
 
   useEffect(() => {
     let mounted = true;
@@ -134,7 +161,7 @@ export default function ClientLayout() {
       {/* ── Bottom navigation tab bar ───────────────────────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-20" style={{ background: "#ffffff", borderTop: "1px solid #E2E8F0" }}>
         <ul className="flex">
-          {NAV_ITEMS.map(({ to, label, icon: Icon, end, badge }) => (
+          {navItems.map(({ to, label, icon: Icon, end, badge }) => (
             <li key={to} className="flex-1">
               <NavLink
                 to={to}
