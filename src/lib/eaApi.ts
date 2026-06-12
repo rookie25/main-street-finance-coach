@@ -244,6 +244,35 @@ export async function downloadQuickBooks(schema: string, month: string): Promise
   URL.revokeObjectURL(url);
 }
 
+// ── Accounts receivable (client's invoices) ──────────────────────────────────
+export interface EAReceivable {
+  invoice_number: string;
+  customer:       string;
+  customer_email: string | null;
+  amount:         number;
+  status:         "draft" | "sent" | "paid" | "overdue" | "void";
+  issue_date:     string | null;
+  due_date:       string | null;
+  paid_at:        string | null;
+  days_overdue:   number | null;
+}
+
+export interface EAReceivablesData {
+  summary: {
+    outstanding:   number;
+    overdue:       number;
+    paid:          number;
+    draft:         number;
+    open_count:    number;
+    overdue_count: number;
+    count:         number;
+  };
+  invoices: EAReceivable[];
+}
+
+export const getClientReceivables = (schema: string) =>
+  get<EAReceivablesData>(`/ea/clients/${encodeURIComponent(schema)}/accounts-receivable`);
+
 // ── Worksheet ─────────────────────────────────────────────────────────────────
 
 export interface PLCategoryRow {
