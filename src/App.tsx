@@ -49,6 +49,7 @@ const AppReceipts  = lazy(() => import("./pages/app/AppReceipts"));
 const AppReports   = lazy(() => import("./pages/app/AppReports"));
 const AppDocuments = lazy(() => import("./pages/app/AppDocuments"));
 const AppCPA       = lazy(() => import("./pages/app/AppCPA"));
+const AppInvoices  = lazy(() => import("./pages/app/AppInvoices"));
 const AppTax       = lazy(() => import("./pages/app/AppTax"));
 const AppChat      = lazy(() => import("./pages/app/AppChat"));
 const AppMessages  = lazy(() => import("./pages/app/AppMessages"));
@@ -129,6 +130,7 @@ const App = () => (
                   <Route path="/app/receipts" element={<AppReceipts />} />
                   <Route path="/app/reports"  element={<AppReports />} />
                   <Route path="/app/cpa"      element={<AppCPA />} />
+                  <Route path="/app/invoices" element={<AppInvoices />} />
                   <Route path="/app/tax"      element={<AppTax />} />
                   <Route path="/app/chat"     element={<AppChat />} />
                   {/* Consolidated into the CPA hub — keep old links working */}

@@ -55,6 +55,16 @@ export interface Briefing {
   created_at: string;
 }
 
+export interface AccountsReceivable {
+  outstanding:   number;
+  overdue:       number;
+  paid:          number;
+  draft:         number;
+  open_count:    number;
+  overdue_count: number;
+  count:         number;
+}
+
 export interface DashboardData {
   month:         string;
   pnl:           PnlSummary;
@@ -62,6 +72,7 @@ export interface DashboardData {
   top_expenses:  TopExpense[];
   alerts:        DashboardAlert[];
   briefing:      Briefing | null;
+  accounts_receivable?: AccountsReceivable;
   tax_due?: {
     date:       string;
     amount?:    number;
@@ -552,6 +563,89 @@ export async function shareDocument(file: File, note: string): Promise<void> {
     try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
     throw new ApiError(detail, res.status);
   }
+}
+
+// ── Invoicing / Accounts Receivable ──────────────────────────────────────────
+
+export interface InvoiceLineItem {
+  description: string;
+  quantity:    number;
+  unit_price:  number;
+  amount:      number;
+}
+
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "void";
+
+export interface Invoice {
+  id:             string;
+  invoice_number: string;
+  customer_name:  string;
+  customer_email: string | null;
+  issue_date:     string;
+  due_date:       string | null;
+  status:         InvoiceStatus;
+  line_items:     InvoiceLineItem[];
+  subtotal:       number;
+  tax:            number;
+  total:          number;
+  notes:          string | null;
+  sent_at:        string | null;
+  paid_at:        string | null;
+  created_at:     string | null;
+}
+
+export interface InvoicesData {
+  invoices: Invoice[];
+  summary: {
+    outstanding: number;
+    overdue:     number;
+    paid:        number;
+    draft:       number;
+    count:       number;
+  };
+}
+
+export interface CreateInvoicePayload {
+  customer_name:   string;
+  customer_email?: string;
+  issue_date?:     string;
+  due_date?:       string;
+  status?:         "draft" | "sent";
+  tax?:            number;
+  notes?:          string;
+  line_items: { description: string; quantity: number; unit_price: number }[];
+}
+
+export const getInvoices = () =>
+  get<InvoicesData>("/client/invoices");
+
+export const createInvoice = (payload: CreateInvoicePayload) =>
+  post<Invoice>("/client/invoices", payload);
+
+export const updateInvoice = (id: string, patchBody: Record<string, unknown>) =>
+  patch<Invoice>(`/client/invoices/${encodeURIComponent(id)}`, patchBody);
+
+export async function deleteInvoice(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/client/invoices/${encodeURIComponent(id)}`, {
+    method:  "DELETE",
+    headers: await authHeader(),
+  });
+  if (!res.ok) {
+    let detail = `Delete failed (${res.status})`;
+    try { const b = await res.json(); if (b?.detail) detail = b.detail; } catch { /* */ }
+    throw new ApiError(detail, res.status);
+  }
+}
+
+/** Open the rendered invoice PDF in a new tab (auth-protected fetch → blob URL). */
+export async function openInvoicePdf(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/client/invoices/${encodeURIComponent(id)}/pdf`, {
+    headers: await authHeader(),
+  });
+  if (!res.ok) throw new ApiError(`Could not load PDF (${res.status})`, res.status);
+  const url = URL.createObjectURL(await res.blob());
+  window.open(url, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 // ── Expense flagging ──────────────────────────────────────────────────────────

@@ -1,9 +1,10 @@
 // Client Portal — Dashboard (Component 4).
 // Two-column layout: left = briefing + P&L, right = stat hero cards.
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  TrendingUp, TrendingDown, Minus, AlertTriangle, Info, RefreshCw, Sun,
+  TrendingUp, TrendingDown, Minus, AlertTriangle, Info, RefreshCw, Sun, FileText, ChevronRight,
 } from "lucide-react";
 import { getDashboard, getMorningBriefing, getMe, getConnectionHealth, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -156,6 +157,9 @@ export default function AppDashboard() {
   const lowCash   = totalCash !== null && totalCash < 2000;
   // Tax due — future field; card is hidden until data exists
   const taxDue    = data?.tax_due;
+  // Accounts receivable — only shown once the business has open invoices
+  const ar        = data?.accounts_receivable;
+  const showAR    = !!ar && ar.open_count > 0;
 
   return (
     <div className="flex flex-col min-h-full">
@@ -366,7 +370,43 @@ export default function AppDashboard() {
               )}
             </div>
 
-            {/* 4 — Tax due (hidden if no data) */}
+            {/* 4 — Accounts receivable (hidden until there are open invoices) */}
+            {showAR && ar && (
+              <Link
+                to="/app/invoices"
+                style={{
+                  background: ar.overdue > 0 ? "#FEF2F2" : "#fff",
+                  border: `1px solid ${ar.overdue > 0 ? "#FECACA" : "#E2E8F0"}`,
+                  borderRadius: 12,
+                  padding: 14,
+                  display: "block",
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <StatLabel color={ar.overdue > 0 ? "#DC2626" : undefined}>You're Owed</StatLabel>
+                  <ChevronRight className="h-4 w-4" style={{ color: "#94A3B8" }} />
+                </div>
+                <div
+                  style={{
+                    fontSize: 22, fontWeight: 700, marginTop: 2,
+                    color: ar.overdue > 0 ? "#DC2626" : "#14161C",
+                  }}
+                >
+                  {fmtFull(ar.outstanding)}
+                </div>
+                <div style={{ fontSize: 11, color: "#64748B", marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                  <FileText className="h-3 w-3" />
+                  {ar.open_count} open invoice{ar.open_count === 1 ? "" : "s"}
+                  {ar.overdue > 0 && (
+                    <span style={{ color: "#DC2626", fontWeight: 600 }}>
+                      · {fmt(ar.overdue)} overdue
+                    </span>
+                  )}
+                </div>
+              </Link>
+            )}
+
+            {/* 5 — Tax due (hidden if no data) */}
             {taxDue && (
               <div
                 style={{
