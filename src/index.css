@@ -6,47 +6,48 @@
 
 @layer base {
   :root {
-    /* Brand palette */
-    --background: 210 33% 98%;         /* cool white #F8FAFC */
-    --foreground: 0 0% 17%;            /* charcoal #2C2C2C */
+    /* Brand palette — "Crisp Light" (unified with the portals: ink + indigo).
+       Marketing site is fully token-driven, so these values re-skin every page. */
+    --background: 220 20% 98%;          /* #F7F8FA */
+    --foreground: 225 18% 9%;           /* ink #14161C */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
+    --card-foreground: 225 18% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
+    --popover-foreground: 225 18% 9%;
 
-    --primary: 258 65% 8%;             /* deep purple-black #0F0721 */
+    --primary: 225 18% 9%;              /* ink-black #14161C */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 239 60% 55%;       /* indigo glow */
+    --primary-glow: 240 60% 62%;        /* indigo glow */
 
-    --secondary: 60 15% 94%;
-    --secondary-foreground: 0 0% 17%;
+    --secondary: 225 20% 96%;
+    --secondary-foreground: 225 18% 9%;
 
-    --muted: 60 15% 94%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 225 20% 96%;
+    --muted-foreground: 220 9% 46%;     /* #6B7280 */
 
-    --accent: 28 64% 47%;              /* caramel gold #C47A2C */
-    --accent-foreground: 60 20% 98%;
+    --accent: 240 56% 60%;              /* indigo #5B5BD6 */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 70% 45%;
-    --destructive-foreground: 60 20% 98%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;             /* cool gray #E2E8F0 */
-    --input: 214 32% 91%;
-    --ring: 239 84% 67%;               /* indigo #6366F1 */
+    --border: 225 16% 92%;              /* #E7E9EE */
+    --input: 225 16% 92%;
+    --ring: 240 56% 60%;                /* indigo #5B5BD6 */
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, #0F0721 0%, #1A0A3C 40%, #0D1A3C 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(60 20% 98%) 0%, hsl(60 18% 95%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(28 64% 47%), hsl(34 70% 55%));
+    /* Gradients — ink/indigo to match the portal login hero */
+    --gradient-hero: linear-gradient(135deg, #14161C 0%, #1B1A2E 40%, #141A2C 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(220 20% 99%) 0%, hsl(220 20% 96%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(240 56% 60%), hsl(245 60% 68%));
 
     /* Shadows */
-    --shadow-soft: 0 1px 3px hsl(0 0% 17% / 0.04), 0 4px 12px hsl(0 0% 17% / 0.04);
-    --shadow-card: 0 2px 6px hsl(0 0% 17% / 0.05), 0 12px 32px hsl(0 0% 17% / 0.06);
-    --shadow-elegant: 0 30px 80px -20px rgba(99, 102, 241, 0.25);
+    --shadow-soft: 0 1px 3px hsl(225 18% 9% / 0.04), 0 4px 12px hsl(225 18% 9% / 0.04);
+    --shadow-card: 0 2px 6px hsl(225 18% 9% / 0.05), 0 12px 32px hsl(225 18% 9% / 0.06);
+    --shadow-elegant: 0 30px 80px -20px rgba(91, 91, 214, 0.25);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
