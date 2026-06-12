@@ -21,17 +21,41 @@ export default function ResetPassword() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Supabase fires PASSWORD_RECOVERY once it parses the recovery token from the URL hash.
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setPageState("ready");
+    // A genuinely expired/invalid link comes back from Supabase with an error in
+    // the URL hash (e.g. #error=access_denied&error_code=otp_expired) — show the
+    // error immediately rather than waiting out the timeout.
+    const hashErr = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("error")
+                  || new URLSearchParams(window.location.search).get("error");
+    if (hashErr) {
+      setPageState("error");
+      return;
+    }
+
+    let cancelled = false;
+    const toReady = () => { if (!cancelled) setPageState((cur) => (cur === "waiting" ? "ready" : cur)); };
+
+    // detectSessionInUrl parses the recovery token when the Supabase client
+    // initializes — which can run BEFORE this component mounts, so the
+    // PASSWORD_RECOVERY event may already have fired and been missed. Check for
+    // an already-established session so a valid link isn't reported as expired.
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) toReady();
+    });
+
+    // Also catch the event if it arrives after mount.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
+        toReady();
       }
     });
-    // If no recovery event arrives within 10s the link is invalid or already used.
+
+    // Fallback: if nothing established a session within 10s, the link is bad.
     const timer = setTimeout(() => {
       setPageState((cur) => (cur === "waiting" ? "error" : cur));
     }, 10_000);
+
     return () => {
+      cancelled = true;
       sub.subscription.unsubscribe();
       clearTimeout(timer);
     };
