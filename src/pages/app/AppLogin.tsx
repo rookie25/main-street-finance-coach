@@ -1,7 +1,7 @@
 // Client Portal login (Component 4) — email/password or Google SSO.
 // Includes inline forgot-password flow matching the EA portal pattern.
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useClientAuth } from "@/hooks/useClientAuth";
@@ -72,6 +72,7 @@ function NeonPanel() {
 export default function AppLogin() {
   const { session, loading, signIn, signInWithGoogle, resetPassword } = useClientAuth();
   const location  = useLocation();
+  const navigate  = useNavigate();
   const from = (location.state as { from?: string } | null)?.from ?? "/app";
 
   const [searchParams]               = useSearchParams();
@@ -95,7 +96,10 @@ export default function AppLogin() {
     setSubmitting(true);
     try {
       await signIn(email.trim(), password);
-      // Session watcher (<Navigate> above) handles the redirect — no second navigate() here.
+      // signIn resolved => auth succeeded and the session is set synchronously,
+      // so navigate immediately. Don't rely on the reactive <Navigate> re-render
+      // (that lag is what required a second click).
+      navigate(from, { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign-in failed. Check your credentials.");
     } finally {

@@ -38,8 +38,13 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Set the session synchronously from the response so the route guard sees it
+    // immediately — don't wait on the async onAuthStateChange listener (which is
+    // what caused the "click login twice" race). Mirrors useEAAuth.
+    setSession(data.session);
+    setLoading(false);
   }
 
   async function signInWithGoogle() {
