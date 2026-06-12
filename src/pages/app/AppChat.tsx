@@ -15,27 +15,91 @@ interface Message {
   content: string;
 }
 
-const STARTER_QUESTIONS = [
-  "What was my best week this month?",
-  "Which vendor am I spending the most on?",
-  "Am I on track compared to last month?",
-  "What are my biggest expense categories?",
-];
+// Suggested prompts adapt to the client's business type so they're relevant
+// (a contractor shouldn't be asked about "best-selling drink"). Falls back to
+// a neutral set that works for any business.
+const PROMPTS: Record<string, { starters: string[]; examples: string[] }> = {
+  food: {
+    starters: [
+      "What was my best week this month?",
+      "Which vendor am I spending the most on?",
+      "Am I on track compared to last month?",
+      "What are my biggest expense categories?",
+    ],
+    examples: [
+      "What was my best selling item?",
+      "How much did I make last Tuesday?",
+      "What's my busiest hour of the day?",
+      "How does this month compare to last?",
+      "What will I make this month?",
+      "How much should I set aside for taxes?",
+      "When is my next quarterly tax payment?",
+      "What are my top expenses this month?",
+    ],
+  },
+  construction: {
+    starters: [
+      "Which job is most profitable right now?",
+      "How much have I billed versus collected?",
+      "Which job is trending over budget?",
+      "What are my biggest costs this month?",
+    ],
+    examples: [
+      "Which job made the most money?",
+      "What's my labor vs. material cost split?",
+      "Which subcontractor am I paying the most?",
+      "How does this month compare to last?",
+      "What will I make this month?",
+      "How much should I set aside for taxes?",
+      "When is my next quarterly tax payment?",
+      "What's my cash position right now?",
+    ],
+  },
+  retail: {
+    starters: [
+      "What's my best-selling product?",
+      "Which vendor am I spending the most on?",
+      "Am I on track compared to last month?",
+      "What are my biggest expense categories?",
+    ],
+    examples: [
+      "What was my best selling product?",
+      "How much did I make last week?",
+      "How does this month compare to last?",
+      "What are my top expenses this month?",
+      "What will I make this month?",
+      "How much should I set aside for taxes?",
+      "When is my next quarterly tax payment?",
+      "What's my cash position right now?",
+    ],
+  },
+  default: {
+    starters: [
+      "How am I doing this month?",
+      "What are my biggest expenses?",
+      "How does this month compare to last?",
+      "How much should I set aside for taxes?",
+    ],
+    examples: [
+      "How much money did I make last week?",
+      "What are my top expense categories?",
+      "How does this month compare to last?",
+      "Who are my biggest vendors?",
+      "What will I make this month?",
+      "When is my next quarterly tax payment?",
+      "What's my cash position right now?",
+      "What's my estimated tax bill so far?",
+    ],
+  },
+};
 
-const EXAMPLE_QUESTIONS = [
-  "What did I spend on Craver in May?",
-  "What was my best selling item?",
-  "How much did I make last Tuesday?",
-  "What are my top expenses this month?",
-  "How does May compare to April?",
-  "What's my busiest hour of the day?",
-  "What will I make this month?",
-  "Am I on track to hit $20k in June?",
-  "Predict my end of month revenue",
-  "How much should I set aside for taxes?",
-  "When is my next quarterly tax payment?",
-  "What's my estimated tax bill so far?",
-];
+function verticalFor(businessType?: string | null): keyof typeof PROMPTS {
+  const t = (businessType || "").toLowerCase();
+  if (/coffee|cafe|caf|bakery|restaurant|bar|food|grill|kitchen|brew|deli|pizz/.test(t)) return "food";
+  if (/construct|contractor|build|trades|plumb|electric|hvac|roof|concrete|landscap/.test(t)) return "construction";
+  if (/retail|shop|store|boutique|market/.test(t)) return "retail";
+  return "default";
+}
 
 function fmtMonth(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
@@ -97,6 +161,7 @@ export default function AppChat() {
   const { data: meData } = useQuery({ queryKey: ["client", "me"], queryFn: getMe, staleTime: 10 * 60 * 1000 });
   const schema = meData?.client_schema || "";
   const keyFor = (m: string) => `${schema}_chat_${m}`;
+  const prompts = PROMPTS[verticalFor(meData?.business_type)];
 
   // Purge this client's chat keys older than 3 months (once schema is known).
   useEffect(() => {
@@ -250,7 +315,7 @@ export default function AppChat() {
               </p>
             </div>
             <div className="grid grid-cols-1 gap-2">
-              {STARTER_QUESTIONS.map((q) => (
+              {prompts.starters.map((q) => (
                 <button
                   key={q}
                   onClick={() => submit(q)}
@@ -321,7 +386,7 @@ export default function AppChat() {
         <div className="px-4 pb-2 border-t border-border bg-background">
           <p className="text-[11px] text-muted-foreground mt-2 mb-1">Try asking:</p>
           <ul className="space-y-0.5">
-            {EXAMPLE_QUESTIONS.map((q) => (
+            {prompts.examples.map((q) => (
               <li key={q} className="text-[11px] text-muted-foreground">• {q}</li>
             ))}
           </ul>

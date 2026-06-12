@@ -16,6 +16,7 @@ export interface ClientProfile {
   full_name: string | null;
   client_schema: string;
   business_name: string | null;
+  business_type: string | null;
 }
 
 export interface PnlSummary {
