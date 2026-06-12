@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  hooks-lint:
+    name: React Hooks lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Fails only on react-hooks/rules-of-hooks violations (the class of bug
+      # that crashes a page at runtime but passes tsc + vite build).
+      - run: npm run lint:hooks
