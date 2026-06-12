@@ -55,6 +55,16 @@ export interface Briefing {
   created_at: string;
 }
 
+export interface AccountsReceivable {
+  outstanding:   number;
+  overdue:       number;
+  paid:          number;
+  draft:         number;
+  open_count:    number;
+  overdue_count: number;
+  count:         number;
+}
+
 export interface DashboardData {
   month:         string;
   pnl:           PnlSummary;
@@ -62,6 +72,7 @@ export interface DashboardData {
   top_expenses:  TopExpense[];
   alerts:        DashboardAlert[];
   briefing:      Briefing | null;
+  accounts_receivable?: AccountsReceivable;
   tax_due?: {
     date:       string;
     amount?:    number;
