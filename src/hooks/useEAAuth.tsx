@@ -42,8 +42,12 @@ export function EAAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Update session immediately from the response so the redirect fires on the
+    // FIRST click — don't wait on the async onAuthStateChange listener.
+    setSession(data.session);
+    setLoading(false);
   }
 
   async function signInWithGoogle() {

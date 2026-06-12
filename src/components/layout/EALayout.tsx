@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle } from "lucide-react";
+import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle, LayoutDashboard } from "lucide-react";
 import { listClients, getClientsSummary, getClientsAlerts, type EAClient, type ClientSummary, type ClientAlertsData } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
@@ -137,6 +137,25 @@ export default function EALayout() {
               No clients yet.
             </div>
           )}
+
+          {/* Dashboard / portfolio overview link */}
+          <NavLink to="/ea" end className="block rounded-lg mb-2">
+            {({ isActive }) => (
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
+                style={isActive
+                  ? { background: "rgba(255,255,255,0.95)", color: "#0F0721" }
+                  : { color: "rgba(255,255,255,0.85)" }}
+              >
+                <LayoutDashboard className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-semibold">Dashboard</span>
+              </div>
+            )}
+          </NavLink>
+
+          <div className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Clients
+          </div>
 
           <ul className="space-y-1">
             {clients?.map((c) => {
