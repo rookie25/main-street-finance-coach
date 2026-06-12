@@ -130,6 +130,21 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
     retry: false, // a 404 (no report for this month) shouldn't be retried
   });
 
+  // NOTE: hooks must run before any early return (Rules of Hooks).
+  const [qbBusy, setQbBusy] = useState(false);
+  async function handleQuickBooks() {
+    if (qbBusy) return;
+    setQbBusy(true);
+    try {
+      await downloadQuickBooks(schema, month);
+      toast.success("QuickBooks journal CSV downloading");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setQbBusy(false);
+    }
+  }
+
   if (pnlQ.isLoading) return <Skeleton className="h-[78vh] w-full rounded-2xl" />;
 
   if (pnlQ.isError) {
@@ -144,20 +159,6 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
 
   const links = pnlQ.data!;
   const pnlDownload = asDownloadUrl(links.pnl_pdf_url, `${schema}_${month}_pl.pdf`);
-
-  const [qbBusy, setQbBusy] = useState(false);
-  async function handleQuickBooks() {
-    if (qbBusy) return;
-    setQbBusy(true);
-    try {
-      await downloadQuickBooks(schema, month);
-      toast.success("QuickBooks journal CSV downloading");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Export failed");
-    } finally {
-      setQbBusy(false);
-    }
-  }
 
   return (
     <Card className="overflow-hidden">
