@@ -19,7 +19,7 @@ function sizeLabel(n: number | null): string {
   return n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export default function AppDocuments() {
+export default function AppDocuments({ embedded = false }: { embedded?: boolean }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -59,12 +59,16 @@ export default function AppDocuments() {
         onChange={(e) => { const f = e.target.files?.[0]; if (f) setPendingFile(f); e.target.value = ""; }}
       />
 
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-xl font-semibold text-primary">Documents</h1>
-      </div>
-      <p className="text-xs text-muted-foreground -mt-2">
-        Send any document you receive straight to your CPA — no separate email.
-      </p>
+      {!embedded && (
+        <>
+          <div className="flex items-center justify-between">
+            <h1 className="font-display text-xl font-semibold text-primary">Documents</h1>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Send any document you receive straight to your CPA — no separate email.
+          </p>
+        </>
+      )}
 
       <Button className="w-full h-12" onClick={() => fileRef.current?.click()}>
         <Upload className="mr-2 h-4 w-4" /> Share a document with your CPA

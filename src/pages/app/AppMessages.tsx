@@ -37,7 +37,7 @@ function DaySeparator({ label }: { label: string }) {
   );
 }
 
-export default function AppMessages() {
+export default function AppMessages({ embedded = false }: { embedded?: boolean }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [schema,   setSchema]   = useState<string>("");
   const [loading,  setLoading]  = useState(true);
@@ -125,7 +125,7 @@ export default function AppMessages() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className={embedded ? "flex flex-col h-full" : "flex flex-col h-[calc(100vh-8rem)]"}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-border bg-card">
         <div className="flex items-center gap-2">
