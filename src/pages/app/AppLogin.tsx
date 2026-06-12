@@ -132,7 +132,7 @@ export default function AppLogin() {
           <div className="text-center mb-8">
             <div className="text-xs uppercase tracking-[0.2em] text-accent mb-2">Desired Labs</div>
             <h1 className="font-display text-3xl font-semibold text-primary">Your Portal</h1>
-            <p className="text-sm text-muted-foreground mt-2">Sign in to view Groundstack financials.</p>
+            <p className="text-sm text-muted-foreground mt-2">Sign in to view your business financials.</p>
           </div>
 
           {wrongPortal && (
@@ -175,7 +175,7 @@ export default function AppLogin() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@groundstackcoffee.com"
+                    placeholder="you@yourbusiness.com"
                   />
                 </div>
                 <div className="space-y-2">
@@ -229,7 +229,7 @@ export default function AppLogin() {
                       required
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="you@groundstackcoffee.com"
+                      placeholder="you@yourbusiness.com"
                     />
                   </div>
                   <Button
