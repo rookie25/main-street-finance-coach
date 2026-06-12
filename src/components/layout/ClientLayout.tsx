@@ -86,7 +86,7 @@ export default function ClientLayout() {
             <span style={{ color: "#C47A2C" }}>Labs</span>
           </div>
           <div className="font-display text-base font-semibold leading-tight" style={{ color: "rgba(255,255,255,0.5)" }}>
-            {meData?.business_name ?? "Groundstack Coffee"}
+            {meData?.business_name ?? "Your Business"}
           </div>
         </div>
         <div className="flex items-center gap-1">
