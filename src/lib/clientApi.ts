@@ -729,3 +729,29 @@ export async function deleteExpense(expenseId: string): Promise<DeleteExpenseRes
   }
   return res.json() as Promise<DeleteExpenseResult>;
 }
+
+// ── Subscription billing (Stripe) ────────────────────────────────────────────
+
+export interface BillingStatus {
+  has_plan:           boolean;
+  monthly_fee:        number | null;   // dollars
+  currency:           string;
+  interval:           string;          // "month" | "year"
+  status:             string | null;   // active|trialing|past_due|canceled|...
+  active:             boolean;
+  current_period_end: string | null;
+}
+
+export function getBillingStatus(): Promise<BillingStatus> {
+  return get<BillingStatus>("/client/billing/status");
+}
+
+// Returns a Stripe-hosted Checkout URL to start the subscription.
+export function startSubscribeCheckout(): Promise<{ url: string }> {
+  return post<{ url: string }>("/client/billing/subscribe", {});
+}
+
+// Returns a Stripe-hosted Customer Portal URL to manage an existing subscription.
+export function openBillingPortal(): Promise<{ url: string }> {
+  return post<{ url: string }>("/client/billing/portal", {});
+}
