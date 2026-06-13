@@ -34,6 +34,7 @@ import EADocumentsCard from "@/components/ea/EADocumentsCard";
 import EAReceivablesCard from "@/components/ea/EAReceivablesCard";
 import EACategorizationReviewCard from "@/components/ea/EACategorizationReviewCard";
 import EAPosImportCard from "@/components/ea/EAPosImportCard";
+import EAQuickBooksImportCard from "@/components/ea/EAQuickBooksImportCard";
 import EAWorksheet from "@/components/ea/EAWorksheet";
 import DateRangePicker, {
   computePreset,
@@ -111,6 +112,7 @@ export default function EAClient() {
             <EAReceivablesCard schema={schema} />
             <EADocumentsCard schema={schema} />
             <EAPosImportCard schema={schema} />
+            <EAQuickBooksImportCard schema={schema} />
             <PendingAdjustmentsCard schema={schema} qc={qc} />
             <EACategorizationReviewCard schema={schema} month={month} />
             <VerificationCard schema={schema} month={month} qc={qc} />

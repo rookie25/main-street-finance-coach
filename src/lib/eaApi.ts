@@ -492,3 +492,16 @@ export const importPosSales = (
   schema: string,
   body: { csv: string; source_label?: string; mapping?: Record<string, string>; dry_run?: boolean },
 ) => post<PosImportResult>(`/ea/client/${encodeURIComponent(schema)}/pos-sales/import`, body);
+
+// ── Categorization warm-start: seed merchant_rules from a QuickBooks GL export ──
+
+export interface QbImportResult {
+  rules_created:          number;
+  rules_skipped_existing: number;
+  rules_skipped_low_freq: number;
+  dry_run:                boolean;
+  preview: { vendor: string | null; pattern: string; pl_category: string; confidence: string }[];
+}
+
+export const importQuickBooksGL = (schema: string, body: { csv: string; dry_run?: boolean }) =>
+  post<QbImportResult>(`/ea/client/${encodeURIComponent(schema)}/quickbooks-gl/import`, body);
