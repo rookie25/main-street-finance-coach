@@ -32,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import EAMessagesCard from "@/components/ea/EAMessagesCard";
 import EADocumentsCard from "@/components/ea/EADocumentsCard";
 import EAReceivablesCard from "@/components/ea/EAReceivablesCard";
+import EACategorizationReviewCard from "@/components/ea/EACategorizationReviewCard";
 import EAWorksheet from "@/components/ea/EAWorksheet";
 import DateRangePicker, {
   computePreset,
@@ -109,6 +110,7 @@ export default function EAClient() {
             <EAReceivablesCard schema={schema} />
             <EADocumentsCard schema={schema} />
             <PendingAdjustmentsCard schema={schema} qc={qc} />
+            <EACategorizationReviewCard schema={schema} month={month} />
             <VerificationCard schema={schema} month={month} qc={qc} />
             <ApprovalCard schema={schema} month={month} qc={qc} />
             <NotesCard schema={schema} month={month} qc={qc} />
