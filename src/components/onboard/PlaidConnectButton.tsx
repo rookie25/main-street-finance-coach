@@ -7,7 +7,9 @@ import {
 } from "react-plaid-link";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createPlaidLinkToken, exchangePlaidPublicToken, ApiError } from "@/lib/onboardApi";
+import {
+  createPlaidLinkToken, exchangePlaidPublicToken, ApiError, PLAID_OAUTH_STASH_KEY,
+} from "@/lib/onboardApi";
 
 /**
  * Plaid Link is a modal SDK (not a redirect), so it can't reuse the generic
@@ -47,6 +49,8 @@ export default function PlaidConnectButton({
       } finally {
         setExchanging(false);
         setLinkToken(null);
+        // In-place (non-OAuth) success — the stash is no longer needed.
+        try { localStorage.removeItem(PLAID_OAUTH_STASH_KEY); } catch { /* ignore */ }
       }
     },
     [token, onConnected, onError],
@@ -71,6 +75,13 @@ export default function PlaidConnectButton({
     onConnecting?.();
     try {
       const { link_token } = await createPlaidLinkToken(token);
+      // Stash so an OAuth bank's full-page redirect can resume on the return page.
+      try {
+        localStorage.setItem(
+          PLAID_OAUTH_STASH_KEY,
+          JSON.stringify({ link_token, onboarding_token: token, ts: Date.now() }),
+        );
+      } catch { /* localStorage unavailable — non-OAuth banks still work in-place */ }
       setLinkToken(link_token);
     } catch (err) {
       onError(err instanceof ApiError ? err.message : "Could not start the bank connection.");

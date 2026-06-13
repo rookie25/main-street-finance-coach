@@ -29,6 +29,7 @@ const About       = lazy(() => import("./pages/About"));
 const Contact     = lazy(() => import("./pages/Contact"));
 const Privacy     = lazy(() => import("./pages/Privacy"));
 const Onboard     = lazy(() => import("./pages/Onboard"));
+const OnboardOAuthReturn = lazy(() => import("./pages/OnboardOAuthReturn"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
 
 // Auth
@@ -102,6 +103,8 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
             </Route>
             {/* Onboarding portal — standalone chrome, outside the marketing SiteLayout. */}
+            {/* Plaid OAuth return target (PLAID_REDIRECT_URI) — static path beats :token. */}
+            <Route path="/onboard/oauth" element={<OnboardOAuthReturn />} />
             <Route path="/onboard/:token" element={<Onboard />} />
 
             {/* Password-reset landing — outside all auth gates, needs no session. */}
