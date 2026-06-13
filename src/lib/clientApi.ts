@@ -278,10 +278,19 @@ export interface ConnectionHealth {
     hours_since_sync: number | null;
     message:          string;
   }[];
+  needs_bank_relink?: boolean;
 }
 
 export const getConnectionHealth = () =>
   get<ConnectionHealth>("/client/connection-health");
+
+// Plaid re-link (#12a): reconnect an expired bank via Link update mode.
+export const createPlaidRelinkToken = () =>
+  post<{ link_token: string; item_id: string | null; institution_name: string | null }>(
+    "/client/plaid/relink-token", {});
+
+export const completePlaidRelink = (itemId?: string | null) =>
+  post<{ ok: boolean }>("/client/plaid/relink-complete", itemId ? { item_id: itemId } : {});
 
 // Download every monthly statement as a single zip (auth header required, so we
 // fetch a blob and trigger the download rather than a plain link).

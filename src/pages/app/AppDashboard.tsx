@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { getDashboard, getMorningBriefing, getMe, getConnectionHealth, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
 import { Skeleton } from "@/components/ui/skeleton";
+import PlaidRelinkButton from "@/components/app/PlaidRelinkButton";
 
 // ── formatters (unchanged) ────────────────────────────────────────────────────
 
@@ -214,6 +215,9 @@ export default function AppDashboard() {
               <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ background: dot }} />
               <span className="font-medium" style={{ color: "#475569" }}>{label}</span>
               {detail && <span className="truncate">— {detail}</span>}
+              {connHealth.needs_bank_relink && (
+                <span className="ml-auto shrink-0"><PlaidRelinkButton /></span>
+              )}
             </div>
           );
         })()}

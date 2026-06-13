@@ -8,6 +8,7 @@ import {
 } from "react-plaid-link";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { exchangePlaidPublicToken, ApiError, PLAID_OAUTH_STASH_KEY } from "@/lib/onboardApi";
+import { completePlaidRelink } from "@/lib/clientApi";
 
 /**
  * Plaid OAuth return page (route: /onboard/oauth — registered as PLAID_REDIRECT_URI).
@@ -30,7 +31,13 @@ export default function OnboardOAuthReturn() {
   const stash = useMemo(() => {
     try {
       const raw = localStorage.getItem(PLAID_OAUTH_STASH_KEY);
-      return raw ? (JSON.parse(raw) as { link_token: string; onboarding_token: string }) : null;
+      return raw ? (JSON.parse(raw) as {
+        link_token: string;
+        onboarding_token?: string;
+        mode?: "relink";
+        item_id?: string | null;
+        return_to?: string;
+      }) : null;
     } catch {
       return null;
     }
@@ -39,6 +46,11 @@ export default function OnboardOAuthReturn() {
   const finish = useCallback(
     (status: "connected" | "error") => {
       try { localStorage.removeItem(PLAID_OAUTH_STASH_KEY); } catch { /* ignore */ }
+      if (stash?.mode === "relink") {
+        // Relink came from the client portal — return there.
+        navigate(stash.return_to || "/app", { replace: true });
+        return;
+      }
       const t = stash?.onboarding_token;
       navigate(
         t ? `/onboard/${encodeURIComponent(t)}?step=2&plaid=${status}` : "/",
@@ -52,15 +64,20 @@ export default function OnboardOAuthReturn() {
     async (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => {
       if (!stash) return finish("error");
       try {
-        await exchangePlaidPublicToken({
-          token: stash.onboarding_token,
-          public_token: publicToken,
-          institution_name: metadata.institution?.name ?? undefined,
-          accounts: metadata.accounts,
-        });
+        if (stash.mode === "relink") {
+          // Update mode: no exchange — just mark the connection healthy again.
+          await completePlaidRelink(stash.item_id ?? undefined);
+        } else {
+          await exchangePlaidPublicToken({
+            token: stash.onboarding_token!,
+            public_token: publicToken,
+            institution_name: metadata.institution?.name ?? undefined,
+            accounts: metadata.accounts,
+          });
+        }
         finish("connected");
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Could not finish linking your bank.");
+        setError(err instanceof ApiError ? err.message : "Could not finish connecting your bank.");
         setTimeout(() => finish("error"), 2500);
       }
     },
