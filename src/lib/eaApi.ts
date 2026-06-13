@@ -435,3 +435,42 @@ export const approveMonthViaBackend = (schema: string, month: string, notes?: st
     `/ea/client/${encodeURIComponent(schema)}/approve-month`,
     { month, notes: notes ?? null },
   );
+
+// ── Categorization review (#9 Phase 2) ───────────────────────────────────────
+
+export interface CategorizationGroup {
+  raw_merchant:     string | null;
+  vendor:           string | null;
+  current_category: string | null;
+  category_source:  string | null;
+  total_amount:     number;
+  count:            number;
+  expense_ids:      string[];
+}
+
+export interface CategorizationReview {
+  period:     string;
+  categories: string[];
+  groups:     CategorizationGroup[];
+  note?:      string;
+}
+
+export const getCategorizationReview = (schema: string, period: string) =>
+  get<CategorizationReview>(
+    `/ea/client/${encodeURIComponent(schema)}/categorization-review?period=${encodeURIComponent(period)}`,
+  );
+
+export interface ApplyCategorizationPayload {
+  period:            string;
+  pl_category:       string;
+  raw_merchant?:     string;
+  merchant_pattern?: string;
+  expense_ids?:      string[];
+  create_rule?:      boolean;
+}
+
+export const applyCategorization = (schema: string, body: ApplyCategorizationPayload) =>
+  post<{ ok: boolean; updated_rows: number; rule_created: boolean; pl_category: string }>(
+    `/ea/client/${encodeURIComponent(schema)}/categorization-review/apply`,
+    body,
+  );
