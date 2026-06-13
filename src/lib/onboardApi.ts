@@ -84,6 +84,12 @@ export function getSquareAuthUrl(token: string): Promise<{ auth_url: string }> {
 // exchangePlaidPublicToken on success. The access token never touches the
 // browser; the backend exchanges + encrypts it server-side.
 
+// OAuth banks redirect the whole browser out to the bank and back to
+// PLAID_REDIRECT_URI (a fixed page, not /onboard/:token), so the link_token and
+// onboarding token must be stashed here to survive the round-trip and be picked
+// up by the OAuth-return page.
+export const PLAID_OAUTH_STASH_KEY = "plaid_oauth_link";
+
 export function createPlaidLinkToken(token: string): Promise<{ link_token: string; expiration: string | null }> {
   return fetch(`${BASE}/onboard/plaid/link-token`, {
     method: "POST",

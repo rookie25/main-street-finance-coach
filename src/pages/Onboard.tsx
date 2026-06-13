@@ -25,6 +25,7 @@ export default function Onboard() {
   const paidParam   = params.get("paid") === "1";
   const canceled    = params.get("canceled") === "1";
   const squareParam = params.get("square") as "connected" | "error" | null;
+  const plaidParam  = params.get("plaid")  as "connected" | "error" | null;
   // step param is 1-indexed (step=2 = Integrations, step=3 = Payment)
   const stepParam   = params.get("step");
   // amount URL param is display-only; the backend session carries the authoritative value.
@@ -78,6 +79,15 @@ export default function Onboard() {
           } else if (squareParam === "error") {
             setOauthErrors({ square: "Square authorization failed. Please try again." });
           }
+        } else if (plaidParam) {
+          // Return from a Plaid OAuth bank (via /onboard/oauth) — back to Integrations.
+          const targetStep = stepParam ? Math.max(0, Number(stepParam) - 1) : 1;
+          setStep(targetStep);
+          if (plaidParam === "connected") {
+            setIntegrations((prev) => ({ ...prev, plaid: "oauth_connected" }));
+          } else if (plaidParam === "error") {
+            setOauthErrors({ plaid: "Bank connection didn't complete. Please try again." });
+          }
         }
       })
       .catch((err) => {
@@ -91,7 +101,7 @@ export default function Onboard() {
         setLoad({ kind: "error", message });
       });
     return () => { active = false; };
-  }, [token, paidParam, canceled, squareParam, stepParam]);
+  }, [token, paidParam, canceled, squareParam, plaidParam, stepParam]);
 
   async function handleSubmit() {
     setSubmitting(true);
