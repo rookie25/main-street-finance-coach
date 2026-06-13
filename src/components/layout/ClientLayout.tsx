@@ -4,13 +4,13 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FileText, LogOut, Bell,
+  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FileText, CreditCard, LogOut, Bell,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { getNotifications, getMe, markNotificationsRead } from "@/lib/clientApi";
+import { getNotifications, getMe, markNotificationsRead, getBillingStatus } from "@/lib/clientApi";
 import NotificationsPanel from "@/components/client/NotificationsPanel";
 
 type NavItem = {
@@ -29,6 +29,7 @@ const BASE_NAV: NavItem[] = [
 ];
 
 const INVOICES_ITEM: NavItem = { to: "/app/invoices", label: "Invoices", icon: FileText, badge: false };
+const BILLING_ITEM: NavItem  = { to: "/app/billing",  label: "Billing",  icon: CreditCard, badge: false };
 
 // Invoicing is central for service & construction businesses but irrelevant to
 // POS / food / retail (they take payment at the point of sale). Show the tab
@@ -40,12 +41,19 @@ function showsInvoices(businessType: string | null | undefined): boolean {
   return true; // construction, services, consulting, trades, and unknown all invoice
 }
 
-function buildNav(businessType: string | null | undefined): NavItem[] {
-  if (!showsInvoices(businessType)) return BASE_NAV;
-  // Insert Invoices right after Reports so AR sits next to financials.
+// Billing only appears once a plan is configured for the client, so existing
+// clients don't see an empty "contact us" tab until billing is actually set up.
+function buildNav(businessType: string | null | undefined, hasBilling: boolean): NavItem[] {
   const items = [...BASE_NAV];
-  const at = items.findIndex((i) => i.to === "/app/reports") + 1;
-  items.splice(at, 0, INVOICES_ITEM);
+  if (showsInvoices(businessType)) {
+    // Insert Invoices right after Reports so AR sits next to financials.
+    const at = items.findIndex((i) => i.to === "/app/reports") + 1;
+    items.splice(at, 0, INVOICES_ITEM);
+  }
+  if (hasBilling) {
+    const at = items.findIndex((i) => i.to === "/app/tax") + 1;
+    items.splice(at, 0, BILLING_ITEM);
+  }
   return items;
 }
 
@@ -69,9 +77,14 @@ export default function ClientLayout() {
     queryFn:  getMe,
     staleTime: 10 * 60 * 1000,
   });
+  const { data: billingData } = useQuery({
+    queryKey: ["client", "billing"],
+    queryFn:  getBillingStatus,
+    staleTime: 10 * 60 * 1000,
+  });
   const unreadNotifications = notificationsData?.unread_count ?? 0;
   const notificationsList   = notificationsData?.notifications ?? [];
-  const navItems            = buildNav(meData?.business_type);
+  const navItems            = buildNav(meData?.business_type, Boolean(billingData?.has_plan));
 
   useEffect(() => {
     let mounted = true;
