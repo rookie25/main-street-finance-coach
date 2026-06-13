@@ -474,3 +474,21 @@ export const applyCategorization = (schema: string, body: ApplyCategorizationPay
     `/ea/client/${encodeURIComponent(schema)}/categorization-review/apply`,
     body,
   );
+
+// ── POS sales import (non-Square revenue) ────────────────────────────────────
+
+export interface PosImportResult {
+  source:             string;
+  parsed:             number;
+  normalized:         number;
+  revenue_total:      number;
+  inserted:           number;
+  skipped_duplicate?: number;
+  dry_run:            boolean;
+  resolved_columns:   Record<string, string>;
+}
+
+export const importPosSales = (
+  schema: string,
+  body: { csv: string; source_label?: string; mapping?: Record<string, string>; dry_run?: boolean },
+) => post<PosImportResult>(`/ea/client/${encodeURIComponent(schema)}/pos-sales/import`, body);
