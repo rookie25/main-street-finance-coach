@@ -27,6 +27,10 @@ export class ErrorBoundary extends Component<Props, State> {
         err?.stack ? `\n${err.stack}` : "",
         this.state.info ? `\nComponent stack:${this.state.info}` : "",
       ].join("");
+      // Only surface raw error details for developers (DEV build, or ?debug=1).
+      const showDetails =
+        typeof window !== "undefined" &&
+        (import.meta.env.DEV || new URLSearchParams(window.location.search).has("debug"));
       return (
         <div style={{
           display: "flex", flexDirection: "column",
@@ -52,18 +56,20 @@ export class ErrorBoundary extends Component<Props, State> {
           >
             Refresh page
           </button>
-          {/* Diagnostic details — readable on-device so the error can be reported. */}
-          <details style={{ marginTop: "8px", maxWidth: "92vw", width: "560px" }}>
-            <summary style={{ fontSize: "12px", color: "#94A3B8", cursor: "pointer", textAlign: "center" }}>
-              Show error details
-            </summary>
-            <pre style={{
-              marginTop: "8px", whiteSpace: "pre-wrap", wordBreak: "break-word",
-              fontSize: "11px", lineHeight: 1.45, color: "#334155",
-              background: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px",
-              padding: "12px", maxHeight: "50vh", overflow: "auto",
-            }}>{detail}</pre>
-          </details>
+          {/* Diagnostic details — developers only (DEV build or ?debug=1). */}
+          {showDetails && (
+            <details style={{ marginTop: "8px", maxWidth: "92vw", width: "560px" }}>
+              <summary style={{ fontSize: "12px", color: "#94A3B8", cursor: "pointer", textAlign: "center" }}>
+                Show error details
+              </summary>
+              <pre style={{
+                marginTop: "8px", whiteSpace: "pre-wrap", wordBreak: "break-word",
+                fontSize: "11px", lineHeight: 1.45, color: "#334155",
+                background: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px",
+                padding: "12px", maxHeight: "50vh", overflow: "auto",
+              }}>{detail}</pre>
+            </details>
+          )}
         </div>
       );
     }
