@@ -9,6 +9,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
 import { supabase } from "@/lib/supabase";
+import { safeChannel, safeRemoveChannel } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
 import { getNotifications, getMe, markNotificationsRead, getBillingStatus } from "@/lib/clientApi";
 import NotificationsPanel from "@/components/client/NotificationsPanel";
@@ -98,16 +99,18 @@ export default function ClientLayout() {
     }
     fetchUnread();
 
-    const channel = supabase
-      .channel("client-messages-unread")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
-        fetchUnread();
-      })
-      .subscribe();
+    const channel = safeChannel(() =>
+      supabase
+        .channel("client-messages-unread")
+        .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+          fetchUnread();
+        })
+        .subscribe(),
+    );
 
     return () => {
       mounted = false;
-      supabase.removeChannel(channel);
+      safeRemoveChannel(channel);
     };
   }, []);
 

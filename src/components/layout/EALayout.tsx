@@ -8,6 +8,7 @@ import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle, LayoutDashbo
 import { listClients, getClientsSummary, getClientsAlerts, type EAClient, type ClientSummary, type ClientAlertsData } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
+import { safeChannel, safeRemoveChannel } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_BG = "#FFFFFF";
@@ -75,16 +76,18 @@ export default function EALayout() {
     }
     fetchUnread();
 
-    const channel = supabase
-      .channel("ea-messages-unread")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
-        fetchUnread();
-      })
-      .subscribe();
+    const channel = safeChannel(() =>
+      supabase
+        .channel("ea-messages-unread")
+        .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+          fetchUnread();
+        })
+        .subscribe(),
+    );
 
     return () => {
       mounted = false;
-      supabase.removeChannel(channel);
+      safeRemoveChannel(channel);
     };
   }, []);
 
