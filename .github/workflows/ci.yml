@@ -20,3 +20,20 @@ jobs:
       # Fails only on react-hooks/rules-of-hooks violations (the class of bug
       # that crashes a page at runtime but passes tsc + vite build).
       - run: npm run lint:hooks
+
+  security:
+    name: Security & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      # Fail the build on a high/critical vuln in PRODUCTION dependencies
+      # (dev-only tooling vulns are excluded — they don't ship to users).
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
