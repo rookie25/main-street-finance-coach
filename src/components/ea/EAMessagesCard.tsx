@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { safeChannel, safeRemoveChannel } from "@/lib/realtime";
 import {
   eaGetMessages, eaSendMessage,
   type Message,
@@ -53,21 +54,23 @@ export default function EAMessagesCard({ schema }: Props) {
 
   useEffect(() => {
     if (!schema) return;
-    const channel = supabase
-      .channel(`messages:ea:${schema}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `client_schema=eq.${schema}` },
-        (payload) => {
-          const msg = payload.new as Message;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const channel = safeChannel(() =>
+      supabase
+        .channel(`messages:ea:${schema}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: `client_schema=eq.${schema}` },
+          (payload) => {
+            const msg = payload.new as Message;
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === msg.id)) return prev;
+              return [...prev, msg];
+            });
+          },
+        )
+        .subscribe(),
+    );
+    return () => { safeRemoveChannel(channel); };
   }, [schema]);
 
   async function handleSend() {
