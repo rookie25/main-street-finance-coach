@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import Reveal from "@/components/Reveal";
-import { supabase } from "@/lib/supabase";
+// Leads go through the rate-limited backend endpoint (service-role insert),
+// not a direct anon Supabase insert (security: spam + RLS hardening).
+const RAILWAY_BASE = (import.meta.env.VITE_RAILWAY_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Required").max(100),
@@ -54,23 +56,35 @@ export default function Contact() {
     setErrors({});
     setSubmitting(true);
 
-    const { error } = await supabase.from("leads").insert({
-      name: parsed.data.name,
-      business_name: parsed.data.business,
-      business_type: parsed.data.type,
-      monthly_revenue: parsed.data.revenue,
-      bookkeeping_spend: parsed.data.spend,
-      is_cpa_partner: parsed.data.cpa,
-      message: parsed.data.message || null,
-      status: "new",
-    });
+    let ok = false;
+    let rateLimited = false;
+    try {
+      const resp = await fetch(`${RAILWAY_BASE}/leads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: parsed.data.name,
+          business_name: parsed.data.business,
+          business_type: parsed.data.type,
+          monthly_revenue: parsed.data.revenue,
+          bookkeeping_spend: parsed.data.spend,
+          is_cpa_partner: parsed.data.cpa,
+          message: parsed.data.message || null,
+        }),
+      });
+      rateLimited = resp.status === 429;
+      ok = resp.ok;
+    } catch {
+      ok = false;
+    }
 
     setSubmitting(false);
 
-    if (error) {
-      if (import.meta.env.DEV) {
-        console.error("[contact] lead insert failed:", error);
-      }
+    if (rateLimited) {
+      toast.error("Too many submissions — please wait a moment and try again.");
+      return;
+    }
+    if (!ok) {
       toast.error("Something went wrong. Please try again or email us directly.");
       return;
     }
