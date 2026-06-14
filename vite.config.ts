@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -12,7 +13,46 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+    // Installable PWA — "Add to Home Screen" → full-screen, app icon, offline shell.
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.svg", "apple-touch-icon.png", "robots.txt"],
+      manifest: {
+        name: "Desired Labs — AI CFO",
+        short_name: "Desired Labs",
+        description:
+          "Your AI CFO — daily financial clarity, receipts, reports and tax for Main Street businesses.",
+        theme_color: "#5B5BD6",
+        background_color: "#F7F8FA",
+        display: "standalone",
+        orientation: "portrait",
+        start_url: "/app",
+        scope: "/",
+        categories: ["finance", "business", "productivity"],
+        icons: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "/pwa-maskable-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        // Don't SPA-fallback Vercel Analytics / API paths.
+        navigateFallbackDenylist: [/^\/_vercel/, /^\/api/],
+      },
+    }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
