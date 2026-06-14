@@ -327,7 +327,89 @@ function LeadsTable({ leads, adminKey, onStatusChange, onSendLink }: {
 
 // ── Clients table ─────────────────────────────────────────────────────────────
 
-function ClientsTable({ clients }: { clients: Client[] }) {
+// ── Payment-link modal ─────────────────────────────────────────────────────────
+function PaymentLinkModal({ client, onClose, adminKey }: {
+  client: Client | null;
+  onClose: () => void;
+  adminKey: string;
+}) {
+  const [price, setPrice] = useState("");
+  const [busy,  setBusy]  = useState(false);
+  const [link,  setLink]  = useState<string | null>(null);
+
+  useEffect(() => {
+    if (client) {
+      setPrice(client.monthly_fee != null ? String(client.monthly_fee) : "");
+      setLink(null);
+    }
+  }, [client]);
+
+  async function generate() {
+    if (!client) return;
+    const dollars = Number(price);
+    if (!dollars || dollars <= 0) { toast.error("Enter a monthly price."); return; }
+    setBusy(true);
+    try {
+      const data = await apiFetch<{ url: string }>("/admin/billing/payment-link", adminKey, {
+        method: "POST",
+        body: JSON.stringify({
+          client_schema: client.schema_name,
+          monthly_fee_cents: Math.round(dollars * 100),
+        }),
+      });
+      setLink(data.url);
+      toast.success("Payment link created");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create link.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!client} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Payment link — {client?.business_name ?? client?.schema_name}</DialogTitle>
+        </DialogHeader>
+        {link ? (
+          <div className="space-y-4 py-2">
+            <p className="text-sm font-medium text-green-700">Link ready — send it to the customer:</p>
+            <div className="bg-secondary rounded-xl p-3 break-all">
+              <a href={link} target="_blank" rel="noreferrer" className="text-sm text-accent hover:underline">{link}</a>
+            </div>
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={() => { void navigator.clipboard.writeText(link); toast.success("Copied"); }}>
+                Copy link
+              </Button>
+              <Button className="flex-1" variant="outline" onClick={onClose}>Done</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Monthly price (USD)</Label>
+              <Input type="number" min={1} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="450" />
+              <p className="text-xs text-muted-foreground">
+                Creates a non-expiring Stripe subscription link at this price (and saves it as the
+                client's monthly fee). Send it to the customer — they pay by card or ACH without logging in.
+              </p>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={onClose} disabled={busy}>Cancel</Button>
+              <Button className="flex-1" onClick={generate} disabled={busy}>
+                {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Generate
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClientsTable({ clients, onPaymentLink }: { clients: Client[]; onPaymentLink: (c: Client) => void }) {
   const active = clients.filter((c) => c.is_active);
   const mrr    = active.reduce((s, c) => s + (c.monthly_fee ?? 0), 0);
 
@@ -358,6 +440,7 @@ function ClientsTable({ clients }: { clients: Client[] }) {
                 <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden lg:table-cell">MRR</th>
                 <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Square</th>
                 <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden sm:table-cell">Date</th>
+                <th className="py-2 px-2" />
               </tr>
             </thead>
             <tbody>
@@ -385,6 +468,16 @@ function ClientsTable({ clients }: { clients: Client[] }) {
                   </td>
                   <td className="py-2.5 px-2 hidden sm:table-cell text-xs text-muted-foreground">
                     {c.created_at?.slice(0, 10) ?? "—"}
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 px-2 whitespace-nowrap"
+                      onClick={() => onPaymentLink(c)}
+                    >
+                      Payment link
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -461,6 +554,7 @@ export default function AdminPanel() {
   const [clients,      setClients]      = useState<Client[]>([]);
   const [loading,      setLoading]      = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [paymentLinkClient, setPaymentLinkClient] = useState<Client | null>(null);
 
   const loadData = useCallback(async (key: string) => {
     setLoading(true);
@@ -576,7 +670,7 @@ export default function AdminPanel() {
             {tab === "clients" && (
               <div className="bg-card border border-border rounded-2xl p-4 md:p-6">
                 <h2 className="font-semibold text-primary mb-4">Clients</h2>
-                <ClientsTable clients={clients} />
+                <ClientsTable clients={clients} onPaymentLink={setPaymentLinkClient} />
               </div>
             )}
           </>
@@ -588,6 +682,12 @@ export default function AdminPanel() {
         onClose={() => setSelectedLead(null)}
         adminKey={adminKey}
         onSent={handleSent}
+      />
+
+      <PaymentLinkModal
+        client={paymentLinkClient}
+        onClose={() => { setPaymentLinkClient(null); void loadData(adminKey); }}
+        adminKey={adminKey}
       />
     </div>
   );
