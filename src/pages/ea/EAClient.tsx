@@ -35,6 +35,7 @@ import EAReceivablesCard from "@/components/ea/EAReceivablesCard";
 import EACategorizationReviewCard from "@/components/ea/EACategorizationReviewCard";
 import EAPosImportCard from "@/components/ea/EAPosImportCard";
 import EAQuickBooksImportCard from "@/components/ea/EAQuickBooksImportCard";
+import EAOpeningBalanceCard from "@/components/ea/EAOpeningBalanceCard";
 import EAWorksheet from "@/components/ea/EAWorksheet";
 import DateRangePicker, {
   computePreset,
@@ -97,11 +98,21 @@ export default function EAClient() {
       </div>
 
       {monthsQ.data && monthsQ.data.months.length === 0 ? (
-        <EmptyState
-          icon={<FileText className="h-6 w-6 text-muted-foreground" />}
-          title="No reports yet"
-          body="No monthly reports have been generated for this client. They'll appear here once the first P&L is produced."
-        />
+        <div className="space-y-6">
+          <EmptyState
+            icon={<FileText className="h-6 w-6 text-muted-foreground" />}
+            title="No reports yet"
+            body="No monthly reports have been generated for this client. Get them set up below, then their first P&L will appear here."
+          />
+          {/* Onboarding tools — reachable before the first report exists. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+            <EAOpeningBalanceCard schema={schema} />
+            <div className="space-y-6">
+              <EAQuickBooksImportCard schema={schema} />
+              <EAPosImportCard schema={schema} />
+            </div>
+          </div>
+        </div>
       ) : !month ? (
         <Skeleton className="h-[60vh] w-full rounded-2xl" />
       ) : (
@@ -111,6 +122,7 @@ export default function EAClient() {
             <EAMessagesCard schema={schema} />
             <EAReceivablesCard schema={schema} />
             <EADocumentsCard schema={schema} />
+            <EAOpeningBalanceCard schema={schema} />
             <EAPosImportCard schema={schema} />
             <EAQuickBooksImportCard schema={schema} />
             <PendingAdjustmentsCard schema={schema} qc={qc} />

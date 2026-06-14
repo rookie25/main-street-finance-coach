@@ -505,3 +505,44 @@ export interface QbImportResult {
 
 export const importQuickBooksGL = (schema: string, body: { csv: string; dry_run?: boolean }) =>
   post<QbImportResult>(`/ea/client/${encodeURIComponent(schema)}/quickbooks-gl/import`, body);
+
+// ── Opening balance-sheet capture (new-client onboarding) ────────────────────
+
+export interface ObsCashRow  { account_name: string; amount: number }
+export interface ObsAssetRow { name: string; amount: number }
+export interface ObsLiabRow  {
+  name: string;
+  amount: number;
+  type?: "loan" | "credit_card";
+  monthly_principal?: number;
+  anchor?: string;
+}
+
+export interface OpeningBalanceResult {
+  total_cash:         number;
+  total_fixed_assets: number;
+  total_assets:       number;
+  total_liabilities:  number;
+  equity_opening:     number;
+  equity_computed:    boolean;   // true => derived as assets - liabilities
+  out_of_balance:     number;
+  balanced:           boolean;
+  dry_run?:           boolean;
+  ok?:                boolean;
+  written?:           { cash_balances: number; fixed_assets: number; client_config: boolean };
+}
+
+export const captureOpeningBalanceSheet = (
+  schema: string,
+  body: {
+    anchor_date: string;
+    cash: ObsCashRow[];
+    fixed_assets: ObsAssetRow[];
+    liabilities: ObsLiabRow[];
+    equity_opening?: number | null;
+    dry_run?: boolean;
+  },
+) => post<OpeningBalanceResult>(
+  `/ea/client/${encodeURIComponent(schema)}/opening-balance-sheet`,
+  body,
+);
