@@ -18,7 +18,11 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     // Installable PWA — "Add to Home Screen" → full-screen, app icon, offline shell.
     VitePWA({
-      registerType: "autoUpdate",
+      // "prompt" (not autoUpdate): when a new deploy is detected we show a
+      // "refresh to update" toast (PWAReloadPrompt) so installed users don't get
+      // stranded on a stale bundle after a backend change (e.g. the private-bucket
+      // migration that broke cached receipt URLs).
+      registerType: "prompt",
       includeAssets: ["favicon.svg", "apple-touch-icon.png", "robots.txt"],
       manifest: {
         name: "Desired Labs — AI CFO",
@@ -45,8 +49,8 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
+        // NOTE: no skipWaiting/clientsClaim — the new SW must WAIT so the prompt
+        // can ask the user; updateServiceWorker(true) activates it on Refresh.
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         // Don't SPA-fallback Vercel Analytics / API paths.
         navigateFallbackDenylist: [/^\/_vercel/, /^\/api/],
