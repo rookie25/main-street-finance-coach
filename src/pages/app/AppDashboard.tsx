@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, Info, RefreshCw, Sun, FileText, ChevronRight,
 } from "lucide-react";
@@ -126,7 +127,7 @@ export default function AppDashboard() {
   const [month, setMonth] = useState(currentMonth);
 
   // ── data fetching (unchanged) ─────────────────────────────────────────────
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey:             ["client", "dashboard", month],
     queryFn:              () => getDashboard(month),
     staleTime:            60_000,
@@ -181,11 +182,12 @@ export default function AppDashboard() {
             className="text-xs border border-border rounded-lg px-2 py-1.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
-            onClick={() => refetch()}
-            className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
-            title="Refresh"
+            onClick={() => { refetch(); toast.success("Refreshed"); }}
+            disabled={isFetching}
+            className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors disabled:opacity-60"
+            title="Refresh — your books update overnight"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>

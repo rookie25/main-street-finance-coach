@@ -134,10 +134,21 @@ export default function ClientLayout() {
         </Link>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => {
+            onClick={async () => {
               const isOpening = !panelOpen;
               setPanelOpen(isOpening);
-              if (isOpening) void markNotificationsRead();
+              if (isOpening && unreadNotifications > 0) {
+                // Drop the badge immediately (optimistic), persist the read
+                // stamp, then reconcile with the server. Without this the badge
+                // lingered until the 60s refetch.
+                qc.setQueryData(
+                  ["client", "notifications"],
+                  (old: { unread_count?: number } | undefined) =>
+                    old ? { ...old, unread_count: 0 } : old,
+                );
+                try { await markNotificationsRead(); } catch { /* non-blocking */ }
+                qc.invalidateQueries({ queryKey: ["client", "notifications"] });
+              }
             }}
             title="Notifications"
             className="relative p-2 rounded-xl bg-secondary border border-border hover:bg-muted transition-colors"
