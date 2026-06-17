@@ -263,6 +263,28 @@ async function patch<T>(path: string, payload: unknown): Promise<T> {
 
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
+// AI chat history — persisted server-side so conversations sync across devices.
+export interface ChatHistoryMessage { role: "user" | "assistant"; content: string; created_at?: string; }
+
+export async function getChatHistory(month: string): Promise<{ month: string; messages: ChatHistoryMessage[] }> {
+  return get(`/client/chat/history?month=${encodeURIComponent(month)}`);
+}
+
+export async function saveChatTurn(
+  month: string,
+  messages: { role: string; content: string }[],
+): Promise<{ saved: number }> {
+  return post(`/client/chat/history`, { month, messages });
+}
+
+export async function clearChatHistory(month: string): Promise<void> {
+  const res = await fetch(`${BASE}/client/chat/history?month=${encodeURIComponent(month)}`, {
+    method: "DELETE",
+    headers: await authHeader(),
+  });
+  if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+}
+
 export const getMe = () =>
   get<ClientProfile>("/client/me");
 

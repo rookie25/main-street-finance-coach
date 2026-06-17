@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { sendChat, streamChat, getMe, ApiError } from "@/lib/clientApi";
+import { sendChat, streamChat, getMe, getChatHistory, saveChatTurn, clearChatHistory, ApiError } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -179,21 +179,38 @@ export default function AppChat() {
   }, [schema]);
 
   // Restore saved history when the month (or the resolved client) changes.
+  // Server is the source of truth so chats sync across devices (web <-> app);
+  // localStorage is only a fallback cache when the server has nothing / is down.
   useEffect(() => {
     if (!selectedMonth || !schema) return;
-    try {
-      const saved = localStorage.getItem(keyFor(selectedMonth));
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { messages: serverMsgs } = await getChatHistory(selectedMonth);
+        if (cancelled) return;
+        if (serverMsgs && serverMsgs.length > 0) {
+          setMessages(serverMsgs.map((m) => ({ role: m.role, content: m.content })));
           setIsRestored(true);
           return;
         }
+      } catch { /* fall through to local cache */ }
+      try {
+        const saved = localStorage.getItem(keyFor(selectedMonth));
+        if (!cancelled && saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+            setIsRestored(true);
+            return;
+          }
+        }
+      } catch { /* ignore corrupt data */ }
+      if (!cancelled) {
+        setMessages([]);
+        setIsRestored(false);
       }
-    } catch { /* ignore corrupt data */ }
-    setMessages([]);
-    setIsRestored(false);
+    })();
+    return () => { cancelled = true; };
   }, [selectedMonth, schema]);
 
   // Persist messages to localStorage (exclude system separators, cap at 50)
@@ -215,7 +232,10 @@ export default function AppChat() {
   }
 
   function handleNewConversation() {
-    if (selectedMonth && schema) localStorage.removeItem(keyFor(selectedMonth));
+    if (selectedMonth && schema) {
+      localStorage.removeItem(keyFor(selectedMonth));
+      clearChatHistory(selectedMonth).catch(() => { /* non-blocking */ });
+    }
     setMessages([]);
     setIsRestored(false);
     toast.success("Conversation cleared");
@@ -243,6 +263,7 @@ export default function AppChat() {
         );
       // Stream tokens live; fall back to the non-streaming endpoint on any error.
       let acc = "";
+      let assistantReply = "";
       try {
         await streamChat(apiMessages, selectedMonth, (chunk) => {
           acc += chunk;
@@ -250,12 +271,24 @@ export default function AppChat() {
         });
         if (!acc.trim()) {
           const resp = await sendChat(apiMessages, selectedMonth);
+          assistantReply = resp.reply;
           setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
+        } else {
+          assistantReply = acc;
         }
       } catch (streamErr) {
         if (streamErr instanceof ApiError && streamErr.status === 429) throw streamErr;
         const resp = await sendChat(apiMessages, selectedMonth);
+        assistantReply = resp.reply;
         setMessages([...nextMessages, { role: "assistant", content: resp.reply }]);
+      }
+      // Persist the completed turn server-side so it syncs across devices
+      // (best-effort; store the clean user text, not the context-prefixed version).
+      if (assistantReply.trim()) {
+        saveChatTurn(selectedMonth, [
+          { role: "user", content: trimmed },
+          { role: "assistant", content: assistantReply },
+        ]).catch(() => { /* non-blocking */ });
       }
     } catch (e) {
       if (e instanceof ApiError && e.status === 429) {
