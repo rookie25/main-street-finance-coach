@@ -182,9 +182,9 @@ export default function AppChat() {
   // Server is the source of truth so chats sync across devices (web <-> app);
   // localStorage is only a fallback cache when the server has nothing / is down.
   useEffect(() => {
-    if (!selectedMonth || !schema) return;
-    let cancelled = false;
-    (async () => {
+    if (!selectedMonth) return;   // NOTE: not gated on `schema` — the server load
+    let cancelled = false;        // scopes by the JWT, so it must fire even before
+    (async () => {                // getMe/schema resolves (that gate blocked sync).
       try {
         const { messages: serverMsgs } = await getChatHistory(selectedMonth);
         if (cancelled) return;
@@ -194,17 +194,20 @@ export default function AppChat() {
           return;
         }
       } catch { /* fall through to local cache */ }
-      try {
-        const saved = localStorage.getItem(keyFor(selectedMonth));
-        if (!cancelled && saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setMessages(parsed);
-            setIsRestored(true);
-            return;
+      // localStorage fallback needs the schema for its namespaced key.
+      if (schema) {
+        try {
+          const saved = localStorage.getItem(keyFor(selectedMonth));
+          if (!cancelled && saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setMessages(parsed);
+              setIsRestored(true);
+              return;
+            }
           }
-        }
-      } catch { /* ignore corrupt data */ }
+        } catch { /* ignore corrupt data */ }
+      }
       if (!cancelled) {
         setMessages([]);
         setIsRestored(false);
