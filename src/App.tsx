@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/react";
 import { PWAReloadPrompt } from "@/components/PWAReloadPrompt";
+import { Capacitor } from "@capacitor/core";
 
 import SiteLayout from "@/components/layout/SiteLayout";
 
@@ -63,6 +64,10 @@ const AdminPanel = lazy(() => import("./pages/admin/AdminPanel"));
 
 const queryClient = new QueryClient();
 
+// In the native (Capacitor) app, open straight into the client portal instead of
+// the marketing homepage. On the web, "/" stays the marketing site.
+const isNativeApp = Capacitor.isNativePlatform();
+
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="flex flex-col items-center gap-3">
@@ -98,7 +103,7 @@ const App = () => (
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route element={<SiteLayout />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={isNativeApp ? <Navigate to="/app" replace /> : <Home />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/services" element={<Services />} />
               <Route path="/pricing" element={<Navigate to="/services" replace />} />
