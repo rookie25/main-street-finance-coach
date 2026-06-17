@@ -1,4 +1,4 @@
-name: Android Release Build
+﻿name: Android Release Build
 
 # Builds a signed Android App Bundle (.aab) for Google Play.
 # Trigger: push a tag like `android-v1.0.0`, or run manually (workflow_dispatch).
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
 
       - name: Install dependencies
         run: npm ci
