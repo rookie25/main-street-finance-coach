@@ -1,7 +1,7 @@
-name: Android Test APK
+﻿name: Android Test APK
 
 # Builds an unsigned DEBUG .apk you can sideload onto a phone/emulator to test the
-# app end-to-end against production — BEFORE setting up the signing keystore or the
+# app end-to-end against production â€” BEFORE setting up the signing keystore or the
 # Play account. Manual trigger only (saves CI minutes). No secrets required.
 #
 # Install on a device: enable "Install unknown apps", then open the downloaded apk.
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
 
       - name: Install dependencies
         run: npm ci
