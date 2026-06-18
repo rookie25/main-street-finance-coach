@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FileText, CreditCard, LogOut, Bell,
+  LayoutDashboard, Receipt, Camera, FileBarChart2, Calculator, MessageCircle, MessageSquare, FileText, CreditCard, LogOut, Bell, LifeBuoy,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientAuth } from "@/hooks/useClientAuth";
@@ -133,6 +133,13 @@ export default function ClientLayout() {
           </div>
         </Link>
         <div className="flex items-center gap-1">
+          <NavLink
+            to="/app/support"
+            title="Support"
+            className="p-2 rounded-xl bg-secondary border border-border hover:bg-muted transition-colors"
+          >
+            <LifeBuoy className="h-4 w-4 text-foreground" />
+          </NavLink>
           <button
             onClick={async () => {
               const isOpening = !panelOpen;

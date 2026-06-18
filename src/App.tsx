@@ -44,6 +44,7 @@ const EASignup = lazy(() => import("./pages/ea/EASignup"));
 const EAHome   = lazy(() => import("./pages/ea/EAHome"));
 const EAClient = lazy(() => import("./pages/ea/EAClient"));
 const EAProfile = lazy(() => import("./pages/ea/EAProfile"));
+const EASupport = lazy(() => import("./pages/ea/EASupport"));
 
 // Client Portal pages
 const AppLogin     = lazy(() => import("./pages/app/AppLogin"));
@@ -58,6 +59,7 @@ const AppTax       = lazy(() => import("./pages/app/AppTax"));
 const AppChat      = lazy(() => import("./pages/app/AppChat"));
 const AppMessages  = lazy(() => import("./pages/app/AppMessages"));
 const AppBilling   = lazy(() => import("./pages/app/AppBilling"));
+const AppSupport   = lazy(() => import("./pages/app/AppSupport"));
 
 // Admin
 const AdminPanel = lazy(() => import("./pages/admin/AdminPanel"));
@@ -129,6 +131,7 @@ const App = () => (
                   <Route path="/ea" element={<EAHome />} />
                   <Route path="/ea/clients/:schema" element={<EAClient />} />
                   <Route path="/ea/profile" element={<EAProfile />} />
+                  <Route path="/ea/support" element={<EASupport />} />
                 </Route>
               </Route>
             </Route>
@@ -147,6 +150,7 @@ const App = () => (
                   <Route path="/app/tax"      element={<AppTax />} />
                   <Route path="/app/billing"  element={<AppBilling />} />
                   <Route path="/app/chat"     element={<AppChat />} />
+                  <Route path="/app/support"  element={<AppSupport />} />
                   {/* Consolidated into the CPA hub — keep old links working */}
                   <Route path="/app/messages"  element={<Navigate to="/app/cpa" replace />} />
                   <Route path="/app/documents" element={<Navigate to="/app/cpa?tab=documents" replace />} />

@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle, LayoutDashboard } from "lucide-react";
+import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle, LayoutDashboard, LifeBuoy } from "lucide-react";
 import { listClients, getClientsSummary, getClientsAlerts, type EAClient, type ClientSummary, type ClientAlertsData } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
@@ -293,6 +293,17 @@ export default function EALayout() {
           >
             <UserCircle className="h-4 w-4 shrink-0" />
             Profile
+          </NavLink>
+          <NavLink
+            to="/ea/support"
+            className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors mb-1"
+            style={({ isActive }) => ({
+              color: isActive ? "#fff" : "#6B7280",
+              background: isActive ? "#EDEEFB" : "transparent",
+            })}
+          >
+            <LifeBuoy className="h-4 w-4 shrink-0" />
+            Support
           </NavLink>
           <button
             onClick={handleSignOut}
