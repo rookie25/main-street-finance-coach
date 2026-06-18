@@ -145,11 +145,23 @@ export interface IncomeTaxSetAside {
   disclaimer:              string;
 }
 
+export interface SalesTaxSetAside {
+  quarter:           string;
+  due_date:          string;
+  days_until:        number;
+  accrued_liability: number;
+  months_counted:    number;
+  weeks_remaining:   number;
+  weekly_set_aside:  number;
+  disclaimer:        string;
+}
+
 export interface TaxData {
   upcoming_deadlines:    TaxDeadline[];
   monthly_history:       TaxEntry[];
   most_recent_payable:   { month: string; amount: number } | null;
   income_tax_setaside?:  IncomeTaxSetAside | null;
+  sales_tax_setaside?:   SalesTaxSetAside | null;
 }
 
 export interface ChatResponse {
