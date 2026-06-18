@@ -1,7 +1,7 @@
 // Client Portal — Tax Center (Component 4).
 // Upcoming CDTFA deadlines, monthly sales tax history.
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, AlertTriangle, CheckCircle2, PiggyBank } from "lucide-react";
+import { CalendarClock, AlertTriangle, CheckCircle2, PiggyBank, Landmark } from "lucide-react";
 import { getTax } from "@/lib/clientApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -82,6 +82,40 @@ export default function AppTax() {
             </div>
             <p className="text-[11px] text-muted-foreground mt-2">
               {data.income_tax_setaside.disclaimer}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Sales-tax vault (set-aside for the upcoming CDTFA payment) ── */}
+      {data?.sales_tax_setaside && data.sales_tax_setaside.weekly_set_aside > 0 && (
+        <Card className="border-accent/30 bg-accent/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <Landmark className="h-4 w-4" /> Sales Tax Vault
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold text-accent">
+                  {fmt(data.sales_tax_setaside.weekly_set_aside)}
+                  <span className="text-sm font-normal text-muted-foreground"> /week</span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Toward{" "}
+                  <span className="font-medium">{fmt(data.sales_tax_setaside.accrued_liability)}</span>{" "}
+                  in {data.sales_tax_setaside.quarter} sales tax, due{" "}
+                  {new Date(data.sales_tax_setaside.due_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {" "}({data.sales_tax_setaside.days_until} days)
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs shrink-0">
+                {data.sales_tax_setaside.weeks_remaining} wks left
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              {data.sales_tax_setaside.disclaimer}
             </p>
           </CardContent>
         </Card>
