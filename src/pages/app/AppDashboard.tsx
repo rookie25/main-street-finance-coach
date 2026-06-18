@@ -155,7 +155,8 @@ export default function AppDashboard() {
   const firstName = meData?.full_name?.split(" ")[0];
   const pnl       = data?.pnl;
   const net       = pnl ? pnl.net_income : 0;
-  const totalCash = data?.cash_balance ?? null;
+  const isLiveCash = data?.live_cash_balance != null;
+  const totalCash = data?.live_cash_balance ?? data?.cash_balance ?? null;
   const lowCash   = totalCash !== null && totalCash < 2000;
   // Tax due — future field; card is hidden until data exists
   const taxDue    = data?.tax_due;
@@ -367,6 +368,11 @@ export default function AppDashboard() {
                   >
                     {totalCash !== null ? fmtFull(totalCash) : "—"}
                   </div>
+                  {isLiveCash && (
+                    <div style={{ fontSize: 11, color: "#16A34A", marginTop: 3, fontWeight: 600 }}>
+                      ● Live · just now
+                    </div>
+                  )}
                   {lowCash && (
                     <div style={{ fontSize: 11, color: "#DC2626", marginTop: 3, fontWeight: 600 }}>
                       Transfer today
