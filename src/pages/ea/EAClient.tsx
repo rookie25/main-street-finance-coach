@@ -33,6 +33,7 @@ import EAMessagesCard from "@/components/ea/EAMessagesCard";
 import EADocumentsCard from "@/components/ea/EADocumentsCard";
 import EAReceivablesCard from "@/components/ea/EAReceivablesCard";
 import EACategorizationReviewCard from "@/components/ea/EACategorizationReviewCard";
+import EACloseReadinessCard from "@/components/ea/EACloseReadinessCard";
 import EAPosImportCard from "@/components/ea/EAPosImportCard";
 import EAQuickBooksImportCard from "@/components/ea/EAQuickBooksImportCard";
 import EAOpeningBalanceCard from "@/components/ea/EAOpeningBalanceCard";
@@ -126,6 +127,7 @@ export default function EAClient() {
             <EAPosImportCard schema={schema} />
             <EAQuickBooksImportCard schema={schema} />
             <PendingAdjustmentsCard schema={schema} qc={qc} />
+            <EACloseReadinessCard schema={schema} month={month} />
             <EACategorizationReviewCard schema={schema} month={month} />
             <VerificationCard schema={schema} month={month} qc={qc} />
             <ApprovalCard schema={schema} month={month} qc={qc} />

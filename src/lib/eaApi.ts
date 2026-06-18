@@ -96,6 +96,29 @@ export const getClientMonths = (schema: string, start?: string, end?: string) =>
 export const getClientPnl = (schema: string, month: string) =>
   get<PnlLinks>(`/ea/client/${encodeURIComponent(schema)}/pnl?month=${encodeURIComponent(month)}`);
 
+export interface CloseCheck {
+  key:    string;
+  label:  string;
+  status: "ok" | "warning" | "blocker" | "skipped";
+  detail: string;
+  count?: number;
+}
+export interface CloseReadiness {
+  schema:        string;
+  month:         string;
+  ready:         boolean;
+  blocker_count: number;
+  warning_count: number;
+  score:         number | null;
+  approved:      boolean;
+  approved_at:   string | null;
+  checks:        CloseCheck[];
+}
+export const getCloseReadiness = (schema: string, month: string) =>
+  get<CloseReadiness>(
+    `/ea/client/${encodeURIComponent(schema)}/close/readiness?month=${encodeURIComponent(month)}`,
+  );
+
 // Supabase signed URLs accept an appended `download` param to force a
 // content-disposition attachment without invalidating the signature.
 export const asDownloadUrl = (signedUrl: string, filename: string) =>
