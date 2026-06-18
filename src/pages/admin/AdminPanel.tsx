@@ -38,6 +38,25 @@ interface Client {
   created_at: string;
 }
 
+interface SupportThread {
+  portal:        "client" | "ea";
+  user_id:       string;
+  client_schema: string | null;
+  user_email:    string | null;
+  user_label:    string | null;
+  last_body:     string;
+  last_at:       string | null;
+  unread:        number;
+  total:         number;
+}
+
+interface SupportMsg {
+  id:         string;
+  sender:     "user" | "support";
+  body:       string;
+  created_at: string;
+}
+
 // ── API ───────────────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, key: string, init?: RequestInit): Promise<T> {
@@ -489,6 +508,173 @@ function ClientsTable({ clients, onPaymentLink }: { clients: Client[]; onPayment
   );
 }
 
+// ── Support inbox ───────────────────────────────────────────────────────────
+
+function SupportInbox({ adminKey }: { adminKey: string }) {
+  const [threads,  setThreads]  = useState<SupportThread[]>([]);
+  const [selected, setSelected] = useState<SupportThread | null>(null);
+  const [messages, setMessages] = useState<SupportMsg[]>([]);
+  const [reply,    setReply]    = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [sending,  setSending]  = useState(false);
+
+  const loadThreads = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch<{ threads: SupportThread[] }>("/admin/support/threads", adminKey);
+      setThreads(data.threads);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load support threads.");
+    } finally {
+      setLoading(false);
+    }
+  }, [adminKey]);
+
+  useEffect(() => { void loadThreads(); }, [loadThreads]);
+
+  async function openThread(t: SupportThread) {
+    setSelected(t);
+    setMessages([]);
+    try {
+      const data = await apiFetch<{ messages: SupportMsg[] }>(
+        `/admin/support/thread?portal=${t.portal}&user_id=${encodeURIComponent(t.user_id)}`,
+        adminKey,
+      );
+      setMessages(data.messages);
+      // optimistically clear this thread's unread badge
+      setThreads((prev) => prev.map((x) =>
+        x.portal === t.portal && x.user_id === t.user_id ? { ...x, unread: 0 } : x));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to open thread.");
+    }
+  }
+
+  async function sendReply() {
+    const text = reply.trim();
+    if (!text || !selected || sending) return;
+    setSending(true);
+    try {
+      const msg = await apiFetch<SupportMsg>("/admin/support/reply", adminKey, {
+        method: "POST",
+        body: JSON.stringify({
+          portal:        selected.portal,
+          user_id:       selected.user_id,
+          client_schema: selected.client_schema,
+          user_email:    selected.user_email,
+          user_label:    selected.user_label,
+          body:          text,
+        }),
+      });
+      setMessages((prev) => [...prev, msg]);
+      setReply("");
+      setThreads((prev) => prev.map((x) =>
+        x.portal === selected.portal && x.user_id === selected.user_id
+          ? { ...x, last_body: text, last_at: msg.created_at } : x));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send reply.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="grid md:grid-cols-[300px_1fr] gap-4">
+      {/* Thread list */}
+      <div className="bg-card border border-border rounded-2xl p-2 md:max-h-[70vh] md:overflow-y-auto">
+        <div className="flex items-center justify-between px-2 py-2">
+          <h2 className="font-semibold text-primary text-sm">Threads</h2>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => void loadThreads()} disabled={loading}>
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+        {threads.length === 0 ? (
+          <p className="text-sm text-muted-foreground px-2 py-4">No support messages yet.</p>
+        ) : (
+          <ul className="space-y-1">
+            {threads.map((t) => (
+              <li key={`${t.portal}:${t.user_id}`}>
+                <button
+                  onClick={() => void openThread(t)}
+                  className={`w-full text-left rounded-lg px-3 py-2 transition-colors ${
+                    selected?.user_id === t.user_id && selected?.portal === t.portal
+                      ? "bg-secondary" : "hover:bg-secondary/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium truncate">{t.user_label || t.user_email || t.user_id.slice(0, 8)}</span>
+                    {t.unread > 0 && (
+                      <span className="shrink-0 min-w-[18px] h-[18px] rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                        {t.unread}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`text-[9px] uppercase font-semibold px-1 rounded ${
+                      t.portal === "ea" ? "bg-violet-100 text-violet-700" : "bg-blue-100 text-blue-700"
+                    }`}>{t.portal}</span>
+                    <span className="text-xs text-muted-foreground truncate">{t.last_body}</span>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Thread view */}
+      <div className="bg-card border border-border rounded-2xl flex flex-col md:max-h-[70vh]">
+        {!selected ? (
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground py-16">
+            Select a thread to read & reply.
+          </div>
+        ) : (
+          <>
+            <div className="px-4 py-3 border-b border-border">
+              <div className="font-semibold text-sm text-primary">{selected.user_label || selected.user_email}</div>
+              <div className="text-xs text-muted-foreground">
+                {selected.portal === "ea" ? "EA" : "Client"}
+                {selected.client_schema ? ` · ${selected.client_schema}` : ""}
+                {selected.user_email ? ` · ${selected.user_email}` : ""}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 min-h-[240px]">
+              {messages.map((m) => {
+                const isSupport = m.sender === "support";
+                return (
+                  <div key={m.id} className={`flex ${isSupport ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
+                      isSupport ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
+                    }`}>
+                      {m.body}
+                      <div className={`text-[10px] mt-1 ${isSupport ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        {new Date(m.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="px-3 py-3 border-t border-border flex items-end gap-2">
+              <textarea
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendReply(); } }}
+                placeholder="Type a reply…"
+                rows={1}
+                className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none min-h-[40px] max-h-[120px]"
+                disabled={sending}
+              />
+              <Button onClick={() => void sendReply()} disabled={!reply.trim() || sending} className="shrink-0">
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send"}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Login screen ──────────────────────────────────────────────────────────────
 
 function AdminLogin({ onSuccess }: { onSuccess: (key: string) => void }) {
@@ -549,7 +735,7 @@ function AdminLogin({ onSuccess }: { onSuccess: (key: string) => void }) {
 export default function AdminPanel() {
   // SEC-06: in-memory only — not restored from storage on load.
   const [adminKey, setAdminKey] = useState<string | null>(null);
-  const [tab,          setTab]          = useState<"leads" | "clients">("leads");
+  const [tab,          setTab]          = useState<"leads" | "clients" | "support">("leads");
   const [leads,        setLeads]        = useState<Lead[]>([]);
   const [clients,      setClients]      = useState<Client[]>([]);
   const [loading,      setLoading]      = useState(false);
@@ -629,7 +815,7 @@ export default function AdminPanel() {
 
         {/* Tabs */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex">
-          {(["leads", "clients"] as const).map((t) => (
+          {(["leads", "clients", "support"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -641,7 +827,9 @@ export default function AdminPanel() {
             >
               {t === "leads"
                 ? `Leads${leads.length ? ` (${leads.length})` : ""}`
-                : `Clients${clients.length ? ` (${clients.length})` : ""}`}
+                : t === "clients"
+                  ? `Clients${clients.length ? ` (${clients.length})` : ""}`
+                  : "Support"}
             </button>
           ))}
         </div>
@@ -673,6 +861,7 @@ export default function AdminPanel() {
                 <ClientsTable clients={clients} onPaymentLink={setPaymentLinkClient} />
               </div>
             )}
+            {tab === "support" && <SupportInbox adminKey={adminKey} />}
           </>
         )}
       </div>
