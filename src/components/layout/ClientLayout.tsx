@@ -135,10 +135,11 @@ export default function ClientLayout() {
         <div className="flex items-center gap-1">
           <NavLink
             to="/app/support"
-            title="Support"
-            className="p-2 rounded-xl bg-secondary border border-border hover:bg-muted transition-colors"
+            title="Get help from Desired Labs support"
+            className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-secondary border border-border hover:bg-muted transition-colors"
           >
             <LifeBuoy className="h-4 w-4 text-foreground" />
+            <span className="text-xs font-medium text-foreground">Help</span>
           </NavLink>
           <button
             onClick={async () => {
