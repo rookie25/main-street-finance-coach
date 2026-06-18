@@ -68,6 +68,8 @@ export interface AccountsReceivable {
 export interface DashboardData {
   month:         string;
   pnl:           PnlSummary;
+  cash_balance?:      number | null;   // snapshot (nightly)
+  live_cash_balance?: number | null;   // real-time Plaid (current month only)
   cash_balances: CashBalance[];
   top_expenses:  TopExpense[];
   alerts:        DashboardAlert[];
