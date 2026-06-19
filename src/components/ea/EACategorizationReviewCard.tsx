@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  getCategorizationReview, applyCategorization,
+  getCategorizationReview, applyCategorization, suggestCategorization,
   ApiError, type CategorizationGroup,
 } from "@/lib/eaApi";
 
@@ -23,11 +23,29 @@ export default function EACategorizationReviewCard({
 }: { schema: string; month: string }) {
   const qc = useQueryClient();
   const [picks, setPicks] = useState<Record<string, string>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
 
   const reviewQ = useQuery({
     queryKey: ["ea", "cat-review", schema, month],
     queryFn:  () => getCategorizationReview(schema, month),
     enabled:  !!schema && !!month,
+  });
+
+  const suggest = useMutation({
+    mutationFn: () => suggestCategorization(schema, month),
+    onSuccess: (res) => {
+      const p: Record<string, string> = {};
+      const r: Record<string, string> = {};
+      for (const s of res.suggestions) {
+        p[s.raw_merchant] = s.suggested_category;
+        r[s.raw_merchant] = s.reason;
+      }
+      // merge so the EA's manual picks aren't clobbered
+      setPicks((prev) => ({ ...p, ...prev }));
+      setReasons((prev) => ({ ...r, ...prev }));
+      toast.success(`AI suggested ${res.suggestions.length} categor${res.suggestions.length === 1 ? "y" : "ies"} — review & apply.`);
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Could not get suggestions."),
   });
 
   const apply = useMutation({
@@ -67,6 +85,18 @@ export default function EACategorizationReviewCard({
             <span className="text-xs font-normal text-muted-foreground">
               ({groups.length} vendor{groups.length === 1 ? "" : "s"})
             </span>
+          )}
+          {groups.length > 0 && (
+            <Button
+              type="button" size="sm" variant="outline"
+              className="ml-auto h-7 text-xs gap-1"
+              onClick={() => suggest.mutate()} disabled={suggest.isPending}
+            >
+              {suggest.isPending
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <Sparkles className="h-3.5 w-3.5" />}
+              Suggest with AI
+            </Button>
           )}
         </CardTitle>
       </CardHeader>
@@ -122,6 +152,12 @@ export default function EACategorizationReviewCard({
                     : "Apply"}
                 </Button>
               </div>
+              {reasons[k] && (
+                <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
+                  <Sparkles className="h-3 w-3 mt-0.5 shrink-0 text-accent" />
+                  AI: {reasons[k]} — review before applying.
+                </p>
+              )}
             </div>
           );
         })}
