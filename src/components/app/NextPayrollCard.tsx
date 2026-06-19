@@ -51,12 +51,12 @@ export default function NextPayrollCard() {
               : `${data.days_until} day${data.days_until === 1 ? "" : "s"} away.`}
           </div>
         </div>
-        <div className="text-xs shrink-0" style={{ color: "#94A3B8" }}>
+        <div className="text-xs shrink-0" style={{ color: "#64748B" }}>
           {data.days_until}d
         </div>
       </div>
       <div className="px-4 pb-2">
-        <p className="text-[10px]" style={{ color: "#AEB4C0" }}>
+        <p className="text-[10px]" style={{ color: "#8A93A3" }}>
           Estimate from your recurring payroll — verify.
         </p>
       </div>

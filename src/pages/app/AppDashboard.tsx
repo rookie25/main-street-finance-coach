@@ -66,7 +66,7 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
           <span className="font-bold text-sm" style={{ color: "#14161C" }}>
             Good morning{name ? `, ${name}` : ""}
           </span>
-          <span className="text-xs shrink-0" style={{ color: "#94A3B8" }}>{today}</span>
+          <span className="text-xs shrink-0" style={{ color: "#64748B" }}>{today}</span>
         </div>
       </div>
 
@@ -95,9 +95,9 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
 
       {/* Footer */}
       <div className="px-4 pb-3 flex items-center justify-between gap-2">
-        <span style={{ fontSize: 10, color: "#94A3B8" }}>Updated daily at 6:45am</span>
+        <span style={{ fontSize: 10, color: "#64748B" }}>Updated daily at 6:45am</span>
         {stale >= 2 && (
-          <span style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>
+          <span style={{ fontSize: 10, color: "#64748B", fontStyle: "italic" }}>
             Last updated {stale} day{stale !== 1 ? "s" : ""} ago
           </span>
         )}
@@ -398,7 +398,7 @@ export default function AppDashboard() {
               >
                 <div className="flex items-center justify-between">
                   <StatLabel color={ar.overdue > 0 ? "#DC2626" : undefined}>You're Owed</StatLabel>
-                  <ChevronRight className="h-4 w-4" style={{ color: "#94A3B8" }} />
+                  <ChevronRight className="h-4 w-4" style={{ color: "#64748B" }} />
                 </div>
                 <div
                   style={{
@@ -464,7 +464,7 @@ function PnlRow({
       <span style={{ color: "#64748B" }}>{label}</span>
       <span
         style={{
-          color: red ? "#DC2626" : muted ? "#94A3B8" : "#14161C",
+          color: red ? "#DC2626" : muted ? "#64748B" : "#14161C",
           fontWeight: bold || red ? 600 : 400,
         }}
       >
@@ -479,7 +479,7 @@ function StatLabel({ children, color }: { children: React.ReactNode; color?: str
     <div
       style={{
         fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em",
-        color: color ?? "#94A3B8", fontWeight: 600,
+        color: color ?? "#64748B", fontWeight: 600,
       }}
     >
       {children}

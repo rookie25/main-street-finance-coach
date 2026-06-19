@@ -26,7 +26,7 @@ export default function CashForecastCard() {
     <div className="bg-white rounded-2xl overflow-hidden border border-border">
       <div className="px-4 pt-4 pb-1 flex items-baseline justify-between gap-2">
         <span className="font-bold text-sm" style={{ color: "#14161C" }}>13-Week Cash Forecast</span>
-        <span className="text-xs" style={{ color: "#94A3B8" }}>
+        <span className="text-xs" style={{ color: "#64748B" }}>
           now {money(data.start_balance ?? 0)}
         </span>
       </div>
@@ -53,7 +53,7 @@ export default function CashForecastCard() {
             ? `Projected to dip to ${money(low!.balance)} around week ${low!.week} — plan ahead.`
             : `Projected low ~${money(low?.balance ?? 0)} (week ${low?.week ?? 0}).`}
         </p>
-        <p className="text-[10px] mt-1" style={{ color: "#AEB4C0" }}>{data.disclaimer}</p>
+        <p className="text-[10px] mt-1" style={{ color: "#8A93A3" }}>{data.disclaimer}</p>
       </div>
     </div>
   );
