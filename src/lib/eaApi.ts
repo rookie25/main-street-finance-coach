@@ -495,6 +495,17 @@ export const getCategorizationReview = (schema: string, period: string) =>
     `/ea/client/${encodeURIComponent(schema)}/categorization-review?period=${encodeURIComponent(period)}`,
   );
 
+export interface CategorizationSuggestion {
+  raw_merchant:       string;
+  suggested_category: string;
+  reason:             string;
+}
+export const suggestCategorization = (schema: string, period: string) =>
+  post<{ period: string; suggestions: CategorizationSuggestion[]; categories: string[] }>(
+    `/ea/client/${encodeURIComponent(schema)}/categorization-review/suggest?period=${encodeURIComponent(period)}`,
+    {},
+  );
+
 export interface ApplyCategorizationPayload {
   period:            string;
   pl_category:       string;
