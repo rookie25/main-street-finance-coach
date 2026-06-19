@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/react";
 import { PWAReloadPrompt } from "@/components/PWAReloadPrompt";
+import StagingBanner from "@/components/StagingBanner";
 import { Capacitor } from "@capacitor/core";
 
 import SiteLayout from "@/components/layout/SiteLayout";
@@ -100,6 +101,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <PWAReloadPrompt />
+      <StagingBanner />
       <BrowserRouter>
         <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
