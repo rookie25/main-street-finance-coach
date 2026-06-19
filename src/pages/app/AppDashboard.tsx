@@ -326,7 +326,7 @@ export default function AppDashboard() {
               ) : (
                 <div
                   style={{
-                    fontSize: 28, fontWeight: 800, color: "#fff",
+                    fontSize: 28, fontWeight: 800,
                     letterSpacing: "-1px", lineHeight: 1,
                     color: net >= 0 ? "#fff" : "#FCA5A5",
                   }}
