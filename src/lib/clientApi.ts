@@ -376,6 +376,18 @@ export interface CashForecast {
 export const getCashForecast = (weeks = 13) =>
   get<CashForecast>(`/client/cash-forecast?weeks=${weeks}`);
 
+export interface NextPayroll {
+  available:   boolean;
+  due_date?:   string;
+  days_until?: number;
+  amount?:     number;
+  line_items?: number;
+  balance?:    number | null;
+  status?:     "short" | "tight" | "covered" | "unknown";
+}
+export const getNextPayroll = () =>
+  get<NextPayroll>("/client/next-payroll");
+
 export const getNotifications = () =>
   get<NotificationsData>("/client/notifications");
 

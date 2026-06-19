@@ -11,6 +11,7 @@ import { getDashboard, getMorningBriefing, getMe, getConnectionHealth, type Dash
 import { Skeleton } from "@/components/ui/skeleton";
 import PlaidRelinkButton from "@/components/app/PlaidRelinkButton";
 import CashForecastCard from "@/components/app/CashForecastCard";
+import NextPayrollCard from "@/components/app/NextPayrollCard";
 
 // ── formatters (unchanged) ────────────────────────────────────────────────────
 
@@ -440,6 +441,9 @@ export default function AppDashboard() {
             )}
           </div>
         </div>
+
+        {/* ── Upcoming payroll vs cash (hidden unless a material payroll is near) ── */}
+        <NextPayrollCard />
 
         {/* ── 13-week cash forecast (full width; hidden if unavailable) ──── */}
         <CashForecastCard />
