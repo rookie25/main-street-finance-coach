@@ -361,6 +361,21 @@ export const getReportsRange = (start: string, end: string) =>
 export const getTax = () =>
   get<TaxData>("/client/tax");
 
+export interface ForecastPoint { week: number; date: string; balance: number; }
+export interface CashForecast {
+  available:      boolean;
+  note?:          string;
+  start_balance?: number;
+  weekly_net?:    number;
+  weeks?:         number;
+  as_of?:         string;
+  points?:        ForecastPoint[];
+  low_point?:     ForecastPoint;
+  disclaimer?:    string;
+}
+export const getCashForecast = (weeks = 13) =>
+  get<CashForecast>(`/client/cash-forecast?weeks=${weeks}`);
+
 export const getNotifications = () =>
   get<NotificationsData>("/client/notifications");
 
