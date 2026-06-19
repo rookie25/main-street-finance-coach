@@ -125,7 +125,7 @@ export default function EALayout() {
           </div>
 
           {isLoading && (
-            <div className="flex items-center gap-2 px-2 py-3 text-sm" style={{ color: "#9AA0AE" }}>
+            <div className="flex items-center gap-2 px-2 py-3 text-sm" style={{ color: "#7C8595" }}>
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </div>
           )}
@@ -138,7 +138,7 @@ export default function EALayout() {
           )}
 
           {clients?.length === 0 && (
-            <div className="px-2 py-3 text-sm" style={{ color: "#9AA0AE" }}>
+            <div className="px-2 py-3 text-sm" style={{ color: "#7C8595" }}>
               No clients yet.
             </div>
           )}
@@ -173,7 +173,7 @@ export default function EALayout() {
             )}
           </NavLink>
 
-          <div className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9AA0AE" }}>
+          <div className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide" style={{ color: "#7C8595" }}>
             Clients
           </div>
 
@@ -242,7 +242,7 @@ export default function EALayout() {
                         {summary && (summary.net_revenue !== null || summary.net_income !== null || summary.last_sync) && (
                           <div
                             className="mt-0.5 text-xs leading-snug pl-4"
-                            style={{ color: isActive ? "#64748B" : "#9AA0AE" }}
+                            style={{ color: isActive ? "#64748B" : "#7C8595" }}
                           >
                             {(summary.net_revenue !== null || summary.net_income !== null) && (
                               <span>
@@ -254,7 +254,7 @@ export default function EALayout() {
                             {summary.last_sync && (
                               <span
                                 className="block"
-                                style={{ color: isActive ? "#94A3B8" : "#AEB4C0" }}
+                                style={{ color: isActive ? "#6B7686" : "#8A93A3" }}
                               >
                                 Synced: {fmtSyncDate(summary.last_sync)}
                               </span>
@@ -295,7 +295,7 @@ export default function EALayout() {
 
         {/* Footer */}
         <div className="p-3" style={{ borderTop: DIVIDER }}>
-          <div className="px-2 pb-2 text-xs truncate" style={{ color: "#AEB4C0" }}>
+          <div className="px-2 pb-2 text-xs truncate" style={{ color: "#8A93A3" }}>
             {user?.email}
           </div>
           <NavLink
