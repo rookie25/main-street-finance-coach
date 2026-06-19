@@ -302,7 +302,7 @@ export default function EALayout() {
             to="/ea/profile"
             className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors mb-1"
             style={({ isActive }) => ({
-              color: isActive ? "#fff" : "#6B7280",
+              color: isActive ? "#14161C" : "#6B7280",
               background: isActive ? "#EDEEFB" : "transparent",
             })}
           >
