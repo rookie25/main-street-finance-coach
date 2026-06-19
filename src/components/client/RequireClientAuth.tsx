@@ -53,7 +53,7 @@ export default function RequireClientAuth() {
       });
 
     return () => { cancelled = true; };
-  }, [loading, session?.user.id, retryKey]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loading, session?.user.id, retryKey]);
 
   if (connError) {
     return (

@@ -317,7 +317,7 @@ export default function DateRangePicker({
     } else {
       setActivePreset(null);
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]);
 
   function selectPreset(key: PresetKey) {
     setActivePreset(key);
