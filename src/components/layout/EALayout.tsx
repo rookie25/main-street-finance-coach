@@ -158,6 +158,21 @@ export default function EALayout() {
             )}
           </NavLink>
 
+          {/* Support — kept with Dashboard for discoverability (was in the footer) */}
+          <NavLink to="/ea/support" className="block rounded-lg mb-2">
+            {({ isActive }) => (
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
+                style={isActive
+                  ? { background: "#EDEEFB", color: "#14161C" }
+                  : { color: "#48505F" }}
+              >
+                <LifeBuoy className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-semibold">Support</span>
+              </div>
+            )}
+          </NavLink>
+
           <div className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9AA0AE" }}>
             Clients
           </div>
@@ -293,17 +308,6 @@ export default function EALayout() {
           >
             <UserCircle className="h-4 w-4 shrink-0" />
             Profile
-          </NavLink>
-          <NavLink
-            to="/ea/support"
-            className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm transition-colors mb-1"
-            style={({ isActive }) => ({
-              color: isActive ? "#fff" : "#6B7280",
-              background: isActive ? "#EDEEFB" : "transparent",
-            })}
-          >
-            <LifeBuoy className="h-4 w-4 shrink-0" />
-            Support
           </NavLink>
           <button
             onClick={handleSignOut}
