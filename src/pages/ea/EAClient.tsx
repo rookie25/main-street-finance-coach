@@ -120,23 +120,40 @@ export default function EAClient() {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-6">
           <ReportViewer schema={schema} month={month} />
-          <div className="space-y-6">
-            <EAMessagesCard schema={schema} />
-            <EAReceivablesCard schema={schema} />
-            <EADocumentsCard schema={schema} />
-            <EAOpeningBalanceCard schema={schema} />
-            <EAPosImportCard schema={schema} />
-            <EAQuickBooksImportCard schema={schema} />
-            <PendingAdjustmentsCard schema={schema} qc={qc} />
-            <EACloseReadinessCard schema={schema} month={month} />
-            <EAMonthNarrativeCard schema={schema} month={month} />
-            <EACategorizationReviewCard schema={schema} month={month} />
-            <VerificationCard schema={schema} month={month} qc={qc} />
-            <ApprovalCard schema={schema} month={month} qc={qc} />
-            <NotesCard schema={schema} month={month} qc={qc} />
-            <FlagsCard schema={schema} month={month} qc={qc} />
-            <OverridesCard schema={schema} qc={qc} />
-          </div>
+          <Tabs defaultValue="close">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="close">Close</TabsTrigger>
+              <TabsTrigger value="comms">Client</TabsTrigger>
+              <TabsTrigger value="setup">Setup</TabsTrigger>
+            </TabsList>
+
+            {/* Close — the month-end workflow, led by the readiness hub */}
+            <TabsContent value="close" className="space-y-6 mt-4">
+              <EACloseReadinessCard schema={schema} month={month} />
+              <EACategorizationReviewCard schema={schema} month={month} />
+              <VerificationCard schema={schema} month={month} qc={qc} />
+              <ApprovalCard schema={schema} month={month} qc={qc} />
+              <EAMonthNarrativeCard schema={schema} month={month} />
+              <FlagsCard schema={schema} month={month} qc={qc} />
+              <PendingAdjustmentsCard schema={schema} qc={qc} />
+              <NotesCard schema={schema} month={month} qc={qc} />
+            </TabsContent>
+
+            {/* Client — comms + receivables */}
+            <TabsContent value="comms" className="space-y-6 mt-4">
+              <EAMessagesCard schema={schema} />
+              <EADocumentsCard schema={schema} />
+              <EAReceivablesCard schema={schema} />
+            </TabsContent>
+
+            {/* Setup — one-time onboarding tools */}
+            <TabsContent value="setup" className="space-y-6 mt-4">
+              <EAOpeningBalanceCard schema={schema} />
+              <EAPosImportCard schema={schema} />
+              <EAQuickBooksImportCard schema={schema} />
+              <OverridesCard schema={schema} qc={qc} />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </div>
