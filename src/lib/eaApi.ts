@@ -119,6 +119,18 @@ export const getCloseReadiness = (schema: string, month: string) =>
     `/ea/client/${encodeURIComponent(schema)}/close/readiness?month=${encodeURIComponent(month)}`,
   );
 
+export interface CloseNarrative {
+  month:        string;
+  narrative:    string | null;
+  note?:        string;
+  generated_at?: string;
+  disclaimer?:  string;
+}
+export const getCloseNarrative = (schema: string, month: string) =>
+  get<CloseNarrative>(
+    `/ea/client/${encodeURIComponent(schema)}/close/narrative?month=${encodeURIComponent(month)}`,
+  );
+
 // Supabase signed URLs accept an appended `download` param to force a
 // content-disposition attachment without invalidating the signature.
 export const asDownloadUrl = (signedUrl: string, filename: string) =>
