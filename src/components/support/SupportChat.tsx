@@ -63,7 +63,6 @@ export default function SupportChat({ load, send, embedded = false }: Props) {
     void refresh(true);
     const t = setInterval(() => void refresh(false), 20000);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
