@@ -323,7 +323,7 @@ export default function AppChat() {
       {/* ── Restored banner ────────────────────────────────────── */}
       {isRestored && !isEmpty && selectedMonth && (
         <div className="flex items-center justify-between px-4 py-1.5 bg-[#F8FAFC] border-b border-border">
-          <span className="text-[11px] text-[#94A3B8]">
+          <span className="text-[11px] text-[#64748B]">
             Continuing your {fmtMonth(selectedMonth)} conversation
           </span>
           <button
