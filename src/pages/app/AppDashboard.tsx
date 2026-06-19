@@ -10,6 +10,7 @@ import {
 import { getDashboard, getMorningBriefing, getMe, getConnectionHealth, type DashboardAlert, type MorningBriefing } from "@/lib/clientApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import PlaidRelinkButton from "@/components/app/PlaidRelinkButton";
+import CashForecastCard from "@/components/app/CashForecastCard";
 
 // ── formatters (unchanged) ────────────────────────────────────────────────────
 
@@ -439,6 +440,9 @@ export default function AppDashboard() {
             )}
           </div>
         </div>
+
+        {/* ── 13-week cash forecast (full width; hidden if unavailable) ──── */}
+        <CashForecastCard />
       </div>
     </div>
   );
