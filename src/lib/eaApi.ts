@@ -592,3 +592,60 @@ export const captureOpeningBalanceSheet = (
   `/ea/client/${encodeURIComponent(schema)}/opening-balance-sheet`,
   body,
 );
+
+// ── Client-assignment offers (accept / reject) ───────────────────────────────
+
+export interface EAOfferBrief {
+  business_name?:     string;
+  owner_name?:        string | null;
+  vertical?:          string | null;
+  notes?:             string | null;
+  onboarding_status?: string | null;
+  books_status?:      string;
+  bank_accounts?:     number;
+  square_connected?:  boolean;
+  monthly_fee?:       number | null;
+  captured_at?:       string;
+}
+
+export interface EAOffer {
+  id:            string;
+  client_schema: string;
+  offer_type:    "targeted" | "pool";
+  brief:         EAOfferBrief;
+  offered_at:    string;
+  expires_at:    string;
+}
+
+export const listOffers = () => get<EAOffer[]>("/ea/offers");
+
+export const acceptOffer = (id: string) =>
+  post<{ accepted: boolean; offer_id: string; client_schema: string }>(
+    `/ea/offers/${encodeURIComponent(id)}/accept`, {},
+  );
+
+export const rejectOffer = (id: string, reason?: string) =>
+  post<{ rejected: boolean; offer_id: string }>(
+    `/ea/offers/${encodeURIComponent(id)}/reject`, reason ? { reason } : {},
+  );
+
+// ── EA notifications ──────────────────────────────────────────────────────────
+
+export interface EANotification {
+  id:         string;
+  type:       string;
+  title:      string;
+  body:       string | null;
+  priority:   "info" | "warning";
+  link:       string | null;
+  read_at:    string | null;
+  created_at: string;
+}
+
+export const listEANotifications = (unreadOnly = false) =>
+  get<{ notifications: EANotification[]; unread: number }>(
+    `/ea/notifications${unreadOnly ? "?unread_only=true" : ""}`,
+  );
+
+export const markNotificationRead = (id: string) =>
+  post<{ ok: boolean }>(`/ea/notifications/${encodeURIComponent(id)}/read`, {});

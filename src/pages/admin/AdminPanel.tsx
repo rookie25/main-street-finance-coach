@@ -675,6 +675,200 @@ function SupportInbox({ adminKey }: { adminKey: string }) {
   );
 }
 
+// ── Assignments (EA client offers) ────────────────────────────────────────────
+
+interface EaRosterItem {
+  user_id:            string;
+  full_name:          string | null;
+  firm_name:          string | null;
+  email:              string | null;
+  active_clients:     number;
+  max_active_clients: number | null;
+}
+
+interface AdminOffer {
+  id:            string;
+  client_schema: string;
+  ea_user_id:    string;
+  status:        string;
+  offer_type:    string;
+  offered_at:    string;
+  responded_at:  string | null;
+  expires_at:    string;
+}
+
+const OFFER_STATUS_STYLES: Record<string, string> = {
+  offered:   "bg-amber-100 text-amber-800",
+  accepted:  "bg-green-100 text-green-800",
+  rejected:  "bg-red-100 text-red-700",
+  expired:   "bg-slate-100 text-slate-600",
+  withdrawn: "bg-slate-100 text-slate-600",
+};
+
+function AssignmentsTab({ adminKey, clients }: { adminKey: string; clients: Client[] }) {
+  const [eas,           setEas]           = useState<EaRosterItem[]>([]);
+  const [offers,        setOffers]        = useState<AdminOffer[]>([]);
+  const [clientSchema,  setClientSchema]  = useState("");
+  const [eaId,          setEaId]          = useState("");
+  const [busy,          setBusy]          = useState(false);
+  const [loading,       setLoading]       = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [e, o] = await Promise.all([
+        apiFetch<EaRosterItem[]>("/admin/eas", adminKey),
+        apiFetch<AdminOffer[]>("/admin/assignments", adminKey),
+      ]);
+      setEas(e);
+      setOffers(o);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load assignments.");
+    } finally {
+      setLoading(false);
+    }
+  }, [adminKey]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function createOffer() {
+    if (!clientSchema || !eaId) { toast.error("Pick a client and an EA."); return; }
+    setBusy(true);
+    try {
+      await apiFetch("/admin/assignments/offer", adminKey, {
+        method: "POST",
+        body: JSON.stringify({ client_schema: clientSchema, ea_user_id: eaId }),
+      });
+      toast.success("Offer sent to the EA.");
+      setClientSchema("");
+      setEaId("");
+      void load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send offer.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function withdraw(id: string) {
+    try {
+      await apiFetch(`/admin/assignments/${id}/withdraw`, adminKey, { method: "POST" });
+      toast.success("Offer withdrawn.");
+      void load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to withdraw.");
+    }
+  }
+
+  const eaName = (id: string) => {
+    const e = eas.find((x) => x.user_id === id);
+    return e?.full_name || e?.email || id.slice(0, 8);
+  };
+  const bizName = (schema: string) =>
+    clients.find((c) => c.schema_name === schema)?.business_name || schema;
+
+  return (
+    <div className="space-y-6">
+      {/* Create offer */}
+      <div className="bg-card border border-border rounded-2xl p-4 md:p-6">
+        <h2 className="font-semibold text-primary mb-4">Offer a client to an EA</h2>
+        <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+          <div className="space-y-1.5">
+            <Label>Client</Label>
+            <select
+              value={clientSchema}
+              onChange={(e) => setClientSchema(e.target.value)}
+              className="w-full text-sm rounded-md border border-border bg-background px-2 py-2 focus:outline-none"
+            >
+              <option value="">Select a client…</option>
+              {clients.map((c) => (
+                <option key={c.schema_name} value={c.schema_name}>
+                  {c.business_name || c.schema_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>EA / CPA</Label>
+            <select
+              value={eaId}
+              onChange={(e) => setEaId(e.target.value)}
+              className="w-full text-sm rounded-md border border-border bg-background px-2 py-2 focus:outline-none"
+            >
+              <option value="">Select an EA…</option>
+              {eas.map((e) => (
+                <option key={e.user_id} value={e.user_id}>
+                  {(e.full_name || e.email || e.user_id.slice(0, 8))}
+                  {` — ${e.active_clients}${e.max_active_clients != null ? `/${e.max_active_clients}` : ""} clients`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button onClick={createOffer} disabled={busy}>
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send offer
+          </Button>
+        </div>
+        {eas.length === 0 && !loading && (
+          <p className="text-xs text-muted-foreground mt-3">
+            No EAs on the roster yet — an EA must sign up and be added to <code>ea_users</code> first.
+          </p>
+        )}
+      </div>
+
+      {/* Offers list */}
+      <div className="bg-card border border-border rounded-2xl p-4 md:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-primary">Offers</h2>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => void load()} disabled={loading}>
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+        {offers.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No offers yet.</p>
+        ) : (
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Client</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">EA</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Status</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs hidden sm:table-cell">Offered</th>
+                  <th className="py-2 px-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {offers.map((o) => (
+                  <tr key={o.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                    <td className="py-2.5 px-2 font-medium">{bizName(o.client_schema)}</td>
+                    <td className="py-2.5 px-2">{eaName(o.ea_user_id)}</td>
+                    <td className="py-2.5 px-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${OFFER_STATUS_STYLES[o.status] ?? "bg-slate-100 text-slate-600"}`}>
+                        {o.status}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-2 hidden sm:table-cell text-xs text-muted-foreground">
+                      {o.offered_at?.slice(0, 10) ?? "—"}
+                    </td>
+                    <td className="py-2.5 px-2 text-right">
+                      {o.status === "offered" && (
+                        <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => void withdraw(o.id)}>
+                          Withdraw
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Login screen ──────────────────────────────────────────────────────────────
 
 function AdminLogin({ onSuccess }: { onSuccess: (key: string) => void }) {
@@ -735,7 +929,7 @@ function AdminLogin({ onSuccess }: { onSuccess: (key: string) => void }) {
 export default function AdminPanel() {
   // SEC-06: in-memory only — not restored from storage on load.
   const [adminKey, setAdminKey] = useState<string | null>(null);
-  const [tab,          setTab]          = useState<"leads" | "clients" | "support">("leads");
+  const [tab,          setTab]          = useState<"leads" | "clients" | "assignments" | "support">("leads");
   const [leads,        setLeads]        = useState<Lead[]>([]);
   const [clients,      setClients]      = useState<Client[]>([]);
   const [loading,      setLoading]      = useState(false);
@@ -815,7 +1009,7 @@ export default function AdminPanel() {
 
         {/* Tabs */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex">
-          {(["leads", "clients", "support"] as const).map((t) => (
+          {(["leads", "clients", "assignments", "support"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -829,7 +1023,9 @@ export default function AdminPanel() {
                 ? `Leads${leads.length ? ` (${leads.length})` : ""}`
                 : t === "clients"
                   ? `Clients${clients.length ? ` (${clients.length})` : ""}`
-                  : "Support"}
+                  : t === "assignments"
+                    ? "Assignments"
+                    : "Support"}
             </button>
           ))}
         </div>
@@ -861,6 +1057,7 @@ export default function AdminPanel() {
                 <ClientsTable clients={clients} onPaymentLink={setPaymentLinkClient} />
               </div>
             )}
+            {tab === "assignments" && <AssignmentsTab adminKey={adminKey} clients={clients} />}
             {tab === "support" && <SupportInbox adminKey={adminKey} />}
           </>
         )}
