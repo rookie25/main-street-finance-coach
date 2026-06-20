@@ -43,6 +43,7 @@ const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
 const EALogin  = lazy(() => import("./pages/ea/EALogin"));
 const EASignup = lazy(() => import("./pages/ea/EASignup"));
 const EAHome   = lazy(() => import("./pages/ea/EAHome"));
+const EAOffers = lazy(() => import("./pages/ea/EAOffers"));
 const EAClient = lazy(() => import("./pages/ea/EAClient"));
 const EAProfile = lazy(() => import("./pages/ea/EAProfile"));
 const EASupport = lazy(() => import("./pages/ea/EASupport"));
@@ -131,6 +132,7 @@ const App = () => (
               <Route element={<RequireAuth />}>
                 <Route element={<EALayout />}>
                   <Route path="/ea" element={<EAHome />} />
+                  <Route path="/ea/offers" element={<EAOffers />} />
                   <Route path="/ea/clients/:schema" element={<EAClient />} />
                   <Route path="/ea/profile" element={<EAProfile />} />
                   <Route path="/ea/support" element={<EASupport />} />

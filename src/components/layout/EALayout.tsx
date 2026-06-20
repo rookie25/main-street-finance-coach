@@ -4,8 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle, LayoutDashboard, LifeBuoy } from "lucide-react";
-import { listClients, getClientsSummary, getClientsAlerts, type EAClient, type ClientSummary, type ClientAlertsData } from "@/lib/eaApi";
+import { LogOut, Loader2, AlertTriangle, MessageCircle, UserCircle, LayoutDashboard, LifeBuoy, Inbox } from "lucide-react";
+import { listClients, getClientsSummary, getClientsAlerts, listOffers, type EAClient, type ClientSummary, type ClientAlertsData } from "@/lib/eaApi";
 import { useEAAuth } from "@/hooks/useEAAuth";
 import { supabase } from "@/lib/supabase";
 import { safeChannel, safeRemoveChannel } from "@/lib/realtime";
@@ -45,6 +45,13 @@ export default function EALayout() {
     queryFn: getClientsAlerts,
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: offers } = useQuery({
+    queryKey: ["ea", "offers"],
+    queryFn: listOffers,
+    refetchInterval: 60 * 1000,
+  });
+  const offerCount = offers?.length ?? 0;
 
   const summaryMap = useMemo(() => {
     const map: Record<string, ClientSummary> = {};
@@ -154,6 +161,29 @@ export default function EALayout() {
               >
                 <LayoutDashboard className="h-4 w-4 shrink-0" />
                 <span className="text-sm font-semibold">Dashboard</span>
+              </div>
+            )}
+          </NavLink>
+
+          {/* Offers — pending client-assignment offers, with a count badge */}
+          <NavLink to="/ea/offers" className="block rounded-lg mb-2">
+            {({ isActive }) => (
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
+                style={isActive
+                  ? { background: "#EDEEFB", color: "#14161C" }
+                  : { color: "#48505F" }}
+              >
+                <Inbox className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-semibold flex-1">Offers</span>
+                {offerCount > 0 && (
+                  <span
+                    className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+                    style={{ background: "#5B5BD6", color: "#fff" }}
+                  >
+                    {offerCount}
+                  </span>
+                )}
               </div>
             )}
           </NavLink>
