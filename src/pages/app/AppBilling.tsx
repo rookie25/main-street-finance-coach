@@ -5,12 +5,19 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { CreditCard, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
-import { getBillingStatus, startSubscribeCheckout, openBillingPortal } from "@/lib/clientApi";
+import { toast } from "sonner";
+import { CreditCard, CheckCircle2, AlertTriangle, ExternalLink, Clock, Loader2 } from "lucide-react";
+import {
+  getBillingStatus, startSubscribeCheckout, openBillingPortal,
+  cancelSubscription, resumeSubscription,
+} from "@/lib/clientApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -26,10 +33,11 @@ const STATUS_LABEL: Record<string, { text: string; variant: "default" | "seconda
 
 export default function AppBilling() {
   const [params] = useSearchParams();
-  const [busy, setBusy] = useState<"subscribe" | "portal" | null>(null);
+  const [busy, setBusy] = useState<"subscribe" | "portal" | "cancel" | "resume" | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["client", "billing"],
     queryFn:  getBillingStatus,
     // After returning from Stripe Checkout the webhook may lag a beat; refetch.
@@ -47,6 +55,36 @@ export default function AppBilling() {
       setBusy(null);
     }
   }
+
+  async function doCancel() {
+    setBusy("cancel");
+    try {
+      await cancelSubscription();
+      setConfirmCancel(false);
+      toast.success("Your subscription will end at the close of this billing period.");
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not cancel. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function doResume() {
+    setBusy("resume");
+    try {
+      await resumeSubscription();
+      toast.success("Your subscription has been resumed.");
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not resume. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const fmtDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
   const status = data?.status ?? null;
   const badge  = status ? STATUS_LABEL[status] ?? { text: status, variant: "outline" as const } : null;
@@ -106,19 +144,45 @@ export default function AppBilling() {
                 </div>
               )}
 
-              {data.current_period_end && data.active && (
+              {data.current_period_end && data.active && !data.cancel_at_period_end && (
                 <p className="text-xs text-muted-foreground">
-                  Renews {new Date(data.current_period_end).toLocaleDateString("en-US", {
-                    month: "long", day: "numeric", year: "numeric",
-                  })}
+                  Renews {fmtDate(data.current_period_end)}
                 </p>
               )}
 
+              {data.cancel_at_period_end && data.current_period_end && (
+                <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+                  <Clock className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    Your subscription is set to cancel on <strong>{fmtDate(data.current_period_end)}</strong>.
+                    You'll keep access until then.
+                  </span>
+                </div>
+              )}
+
               {data.active ? (
-                <Button onClick={() => go("portal")} disabled={busy !== null} variant="outline" className="w-full">
-                  {busy === "portal" ? "Opening…" : "Manage billing"}
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                </Button>
+                <div className="space-y-2">
+                  <Button onClick={() => go("portal")} disabled={busy !== null} variant="outline" className="w-full">
+                    {busy === "portal" ? "Opening…" : "Manage billing"}
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+
+                  {data.cancel_at_period_end ? (
+                    <Button onClick={() => void doResume()} disabled={busy !== null} className="w-full">
+                      {busy === "resume" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Resume subscription
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setConfirmCancel(true)}
+                      disabled={busy !== null}
+                      variant="ghost"
+                      className="w-full text-destructive hover:text-destructive hover:bg-destructive/5"
+                    >
+                      Cancel subscription
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <Button onClick={() => go("subscribe")} disabled={busy !== null} className="w-full">
                   {busy === "subscribe" ? "Redirecting…" : "Subscribe"}
@@ -132,6 +196,32 @@ export default function AppBilling() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={confirmCancel} onOpenChange={(o) => { if (!o) setConfirmCancel(false); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cancel subscription?</DialogTitle>
+            <DialogDescription>
+              {data?.current_period_end
+                ? `Your bookkeeping service stays active until ${fmtDate(data.current_period_end)}, then your subscription ends. You can resume any time before then.`
+                : "Your subscription will be cancelled at the end of the current billing period."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setConfirmCancel(false)} disabled={busy === "cancel"}>
+              Keep subscription
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void doCancel()}
+              disabled={busy === "cancel"}
+            >
+              {busy === "cancel" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Cancel subscription
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
