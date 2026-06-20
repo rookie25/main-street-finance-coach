@@ -735,11 +735,16 @@ function AssignmentsTab({ adminKey, clients }: { adminKey: string; clients: Clie
     if (!clientSchema || !eaId) { toast.error("Pick a client and an EA."); return; }
     setBusy(true);
     try {
-      await apiFetch("/admin/assignments/offer", adminKey, {
+      const isPool = eaId === "__pool__";
+      const res = await apiFetch<{ count?: number }>("/admin/assignments/offer", adminKey, {
         method: "POST",
-        body: JSON.stringify({ client_schema: clientSchema, ea_user_id: eaId }),
+        body: JSON.stringify(
+          isPool
+            ? { client_schema: clientSchema, offer_type: "pool" }
+            : { client_schema: clientSchema, ea_user_id: eaId },
+        ),
       });
-      toast.success("Offer sent to the EA.");
+      toast.success(isPool ? `Broadcast to ${res.count ?? 0} EA(s).` : "Offer sent to the EA.");
       setClientSchema("");
       setEaId("");
       void load();
@@ -796,6 +801,7 @@ function AssignmentsTab({ adminKey, clients }: { adminKey: string; clients: Clie
               className="w-full text-sm rounded-md border border-border bg-background px-2 py-2 focus:outline-none"
             >
               <option value="">Select an EA…</option>
+              <option value="__pool__">📣 Broadcast to all eligible EAs</option>
               {eas.map((e) => (
                 <option key={e.user_id} value={e.user_id}>
                   {(e.full_name || e.email || e.user_id.slice(0, 8))}
