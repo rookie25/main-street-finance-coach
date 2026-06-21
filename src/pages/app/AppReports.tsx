@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { getReportsRange, asDownloadUrl, downloadAllDocuments, getMe, type ReportForRange } from "@/lib/clientApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 import DateRangePicker, {
   computePreset,
   toISODate,
@@ -113,6 +114,7 @@ export default function AppReports() {
 function ReportCard({ report, schema }: { report: ReportForRange; schema: string }) {
   const { month, pnl_pdf_url, balance_sheet_pdf_url } = report;
   const [expanded, setExpanded] = useState(true);
+  const isMobile = useIsMobile();
 
   if (!pnl_pdf_url) return null;
 
@@ -142,25 +144,46 @@ function ReportCard({ report, schema }: { report: ReportForRange; schema: string
               <Download className="mr-1.5 h-3.5 w-3.5" /> P&amp;L
             </a>
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpanded((e) => !e)}
-            className="text-xs text-muted-foreground"
-          >
-            {expanded ? "Collapse" : "View"}
-          </Button>
+          {/* Inline preview only exists on desktop; the collapse toggle is moot on mobile */}
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpanded((e) => !e)}
+              className="text-xs text-muted-foreground"
+            >
+              {expanded ? "Collapse" : "View"}
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Inline PDF viewer */}
-      {expanded && (
-        <iframe
-          src={pnl_pdf_url}
-          title={`P&L ${monthLabel(month)}`}
-          className="w-full"
-          style={{ height: "70dvh", minHeight: 400 }}
-        />
+      {isMobile ? (
+        // Android's in-app webview can't render PDFs inline (blank iframe), so on
+        // phones show tap-to-open buttons that hand the PDF to the device viewer.
+        <div className="p-4 space-y-2">
+          <Button asChild className="w-full">
+            <a href={pnl_pdf_url} target="_blank" rel="noopener noreferrer">
+              <FileText className="mr-2 h-4 w-4" /> View Profit &amp; Loss
+            </a>
+          </Button>
+          {balance_sheet_pdf_url && (
+            <Button asChild variant="outline" className="w-full">
+              <a href={balance_sheet_pdf_url} target="_blank" rel="noopener noreferrer">
+                <FileText className="mr-2 h-4 w-4" /> View Balance Sheet
+              </a>
+            </Button>
+          )}
+        </div>
+      ) : (
+        expanded && (
+          <iframe
+            src={pnl_pdf_url}
+            title={`P&L ${monthLabel(month)}`}
+            className="w-full"
+            style={{ height: "70dvh", minHeight: 400 }}
+          />
+        )
       )}
     </div>
   );
