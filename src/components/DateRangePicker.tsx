@@ -450,8 +450,8 @@ export default function DateRangePicker({
               onDayHover={setHoverDate}
             />
 
-            {/* Footer */}
-            <div className="mt-3 pt-3 border-t border-border flex items-center gap-4">
+            {/* Footer — wraps on narrow (mobile) widths so End + Apply never clip */}
+            <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-1.5 text-sm">
                 <span className="text-muted-foreground text-xs uppercase tracking-wide">Start</span>
                 <span className="font-medium border border-border rounded px-2 py-0.5 text-xs bg-muted/30 min-w-[90px]">
@@ -464,12 +464,12 @@ export default function DateRangePicker({
                   {pendingEnd ? fmtFull(pendingEnd) : "—"}
                 </span>
               </div>
-              <div className="ml-auto">
+              <div className="w-full sm:w-auto sm:ml-auto">
                 <button
                   type="button"
                   disabled={!pendingStart || !pendingEnd || pickingEnd}
                   onClick={applyRange}
-                  className="px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-full sm:w-auto px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Apply
                 </button>
