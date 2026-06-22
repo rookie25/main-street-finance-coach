@@ -77,6 +77,9 @@ export default function SupportChat({ load, send, embedded = false }: Props) {
     try {
       const msg = await send(text);
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+      // The backend posts an instant auto-acknowledgement; refetch now so it shows
+      // immediately instead of waiting for the 20s poll.
+      void refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send message.");
       setInput(text);
