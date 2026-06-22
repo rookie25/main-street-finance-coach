@@ -95,7 +95,7 @@ function MorningBriefingCard({ briefing, name }: { briefing: MorningBriefing; na
 
       {/* Footer */}
       <div className="px-4 pb-3 flex items-center justify-between gap-2">
-        <span style={{ fontSize: 10, color: "#64748B" }}>Updated daily at 6:45am</span>
+        <span style={{ fontSize: 10, color: "#64748B" }}>Updated every morning</span>
         {stale >= 2 && (
           <span style={{ fontSize: 10, color: "#64748B", fontStyle: "italic" }}>
             Last updated {stale} day{stale !== 1 ? "s" : ""} ago

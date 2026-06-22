@@ -21,7 +21,7 @@ function GoogleIcon() {
 }
 
 const PANEL_FEATURES = [
-  "Daily financial briefings at 6:45 AM",
+  "Financial briefings every morning",
   "Automated bookkeeping & categorization",
   "Monthly CPA-ready package",
   "Real-time cash flow visibility",
