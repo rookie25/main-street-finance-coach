@@ -454,6 +454,48 @@ export const resolveVerificationFlag = (schema: string, flagId: number) =>
     {},
   );
 
+// ── GL suspense review (Phase 3) ─────────────────────────────────────────────
+
+export interface SuspenseGroup {
+  merchant: string;
+  category: string;
+  count:    number;
+  amount:   number;
+  dates:    string[];
+}
+
+export interface SuspenseResolution {
+  id:                string;
+  merchant:          string | null;
+  category:          string | null;
+  bucket:            string;
+  note:              string | null;
+  resolved_by_email: string | null;
+  created_at:        string;
+}
+
+export interface SuspenseQueue {
+  schema:          string;
+  count:           number;
+  total_amount:    number;
+  groups:          SuspenseGroup[];
+  overrides:       { merchant?: string; category?: string; bucket: string }[];
+  resolutions:     SuspenseResolution[];
+  resolve_buckets: string[];
+}
+
+export const getSuspenseQueue = (schema: string) =>
+  get<SuspenseQueue>(`/ea/client/${encodeURIComponent(schema)}/suspense`);
+
+export const resolveSuspense = (
+  schema: string,
+  payload: { merchant?: string; category?: string; bucket: string; note?: string },
+) =>
+  post<{ ok: boolean; cleared_count: number | null; overrides: unknown[] }>(
+    `/ea/client/${encodeURIComponent(schema)}/suspense/resolve`,
+    payload,
+  );
+
 // ── Month approval (via backend so email fires on approval) ──────────────────
 
 export interface EAApprovalRow {

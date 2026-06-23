@@ -33,6 +33,7 @@ import EAMessagesCard from "@/components/ea/EAMessagesCard";
 import EADocumentsCard from "@/components/ea/EADocumentsCard";
 import EAReceivablesCard from "@/components/ea/EAReceivablesCard";
 import EACategorizationReviewCard from "@/components/ea/EACategorizationReviewCard";
+import EASuspenseReviewCard from "@/components/ea/EASuspenseReviewCard";
 import EACloseReadinessCard from "@/components/ea/EACloseReadinessCard";
 import EAMonthNarrativeCard from "@/components/ea/EAMonthNarrativeCard";
 import EAPosImportCard from "@/components/ea/EAPosImportCard";
@@ -131,6 +132,7 @@ export default function EAClient() {
             <TabsContent value="close" className="space-y-6 mt-4">
               <EACloseReadinessCard schema={schema} month={month} />
               <EACategorizationReviewCard schema={schema} month={month} />
+              <EASuspenseReviewCard schema={schema} />
               <VerificationCard schema={schema} month={month} qc={qc} />
               <ApprovalCard schema={schema} month={month} qc={qc} />
               <EAMonthNarrativeCard schema={schema} month={month} />
