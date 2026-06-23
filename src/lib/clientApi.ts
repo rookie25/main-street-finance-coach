@@ -376,6 +376,35 @@ export interface CashForecast {
 export const getCashForecast = (weeks = 13) =>
   get<CashForecast>(`/client/cash-forecast?weeks=${weeks}`);
 
+// Phase 4 — forward P&L + cash forecast (read-only, structured by cost layer).
+export interface PnlForecastRow {
+  period:                       string;
+  revenue:                      number;
+  cogs:                         number;
+  operating_expenses:           number;
+  loan_interest:                number;
+  net_income:                   number;
+  loan_principal:               number;
+  square_capital_holdback:      number;
+  owner_draws:                  number;
+  projected_cash:               number;
+  sjc_balance_end:              number;
+  square_capital_balance_end:   number;
+}
+export interface PnlForecast {
+  available:        boolean;
+  note?:            string;
+  schema?:          string;
+  anchor_period?:   string;
+  horizon?:         number;
+  trailing_months?: string[];
+  starting_cash?:   number;
+  rows?:            PnlForecastRow[];
+  assumptions?:     string[];
+}
+export const getPnlForecast = (horizon = 6, growth = 0) =>
+  get<PnlForecast>(`/client/pnl-forecast?horizon=${horizon}&growth=${growth}`);
+
 export interface NextPayroll {
   available:   boolean;
   due_date?:   string;
