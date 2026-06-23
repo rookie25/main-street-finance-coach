@@ -456,12 +456,21 @@ export const resolveVerificationFlag = (schema: string, flagId: number) =>
 
 // ── GL suspense review (Phase 3) ─────────────────────────────────────────────
 
+export interface SuspenseClarification {
+  status:           string;          // open | asked | answered | resolved
+  ea_question:      string | null;
+  owner_answer:     string | null;
+  owner_category:   string | null;
+  suggested_bucket: string | null;   // owner's plain-language answer mapped to a bucket
+}
+
 export interface SuspenseGroup {
-  merchant: string;
-  category: string;
-  count:    number;
-  amount:   number;
-  dates:    string[];
+  merchant:       string;
+  category:       string;
+  count:          number;
+  amount:         number;
+  dates:          string[];
+  clarification?: SuspenseClarification;
 }
 
 export interface SuspenseResolution {
@@ -493,6 +502,15 @@ export const resolveSuspense = (
 ) =>
   post<{ ok: boolean; cleared_count: number | null; overrides: unknown[] }>(
     `/ea/client/${encodeURIComponent(schema)}/suspense/resolve`,
+    payload,
+  );
+
+export const askSuspenseOwner = (
+  schema: string,
+  payload: { merchant?: string; category?: string; question?: string },
+) =>
+  post<{ ok: boolean }>(
+    `/ea/client/${encodeURIComponent(schema)}/suspense/ask`,
     payload,
   );
 
