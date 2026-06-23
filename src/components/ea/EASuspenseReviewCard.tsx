@@ -13,10 +13,11 @@ const money = (n: number) =>
 
 // Friendly labels for the GL buckets the backend accepts.
 const BUCKET_LABEL: Record<string, string> = {
-  EXPENSE:     "Business expense",
-  DRAW:        "Owner draw",
-  LOAN:        "Loan payment",
-  CC_PAYMENT:  "Credit card payment",
+  EXPENSE:        "Business expense (already booked)",
+  EXPENSE_DIRECT: "Business expense (new)",
+  DRAW:           "Owner draw",
+  LOAN:           "Loan payment",
+  CC_PAYMENT:     "Credit card payment",
 };
 
 const keyOf = (g: SuspenseGroup) => `${g.merchant}|${g.category}`;
