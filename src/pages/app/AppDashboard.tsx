@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import PlaidRelinkButton from "@/components/app/PlaidRelinkButton";
 import CashForecastCard from "@/components/app/CashForecastCard";
 import PnlForecastCard from "@/components/app/PnlForecastCard";
+import SuspenseQuestionsCard from "@/components/app/SuspenseQuestionsCard";
 import NextPayrollCard from "@/components/app/NextPayrollCard";
 
 // ── formatters (unchanged) ────────────────────────────────────────────────────
@@ -445,6 +446,9 @@ export default function AppDashboard() {
 
         {/* ── Upcoming payroll vs cash (hidden unless a material payroll is near) ── */}
         <NextPayrollCard />
+
+        {/* ── Owner clarification: categorize unknown payments (hidden if none) ─ */}
+        <SuspenseQuestionsCard />
 
         {/* ── 13-week cash forecast (full width; hidden if unavailable) ──── */}
         <CashForecastCard />

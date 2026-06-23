@@ -405,6 +405,35 @@ export interface PnlForecast {
 export const getPnlForecast = (horizon = 6, growth = 0) =>
   get<PnlForecast>(`/client/pnl-forecast?horizon=${horizon}&growth=${growth}`);
 
+// Suspense clarification — owner side. The owner explains their own uncategorized
+// transactions in plain language; the EA classifies. Never shows GL buckets.
+export interface SuspenseQuestion {
+  merchant:       string;
+  category:       string;
+  count:          number;
+  amount:         number;
+  dates:          string[];
+  status:         string;          // open | asked | answered | resolved
+  ea_question:    string | null;   // set when the EA asked about this item
+  owner_answer:   string | null;
+  owner_category: string | null;
+}
+export interface SuspenseQuestions {
+  available:        boolean;
+  items:            SuspenseQuestion[];
+  owner_categories: string[];
+}
+export const getSuspenseQuestions = () =>
+  get<SuspenseQuestions>("/client/suspense-questions");
+
+export const answerSuspenseQuestion = (
+  payload: { merchant?: string; category?: string; owner_category: string; note?: string },
+) =>
+  post<{ ok: boolean; suggested_bucket: string | null }>(
+    "/client/suspense-questions/answer",
+    payload,
+  );
+
 export interface NextPayroll {
   available:   boolean;
   due_date?:   string;

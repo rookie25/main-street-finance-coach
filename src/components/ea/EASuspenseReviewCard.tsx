@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Loader2, HelpCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, HelpCircle, MessageCircleQuestion } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  getSuspenseQueue, resolveSuspense, ApiError, type SuspenseGroup,
+  getSuspenseQueue, resolveSuspense, askSuspenseOwner, ApiError, type SuspenseGroup,
 } from "@/lib/eaApi";
 
 const money = (n: number) =>
@@ -59,9 +59,38 @@ export default function EASuspenseReviewCard({ schema }: { schema: string }) {
       toast.error(e instanceof ApiError ? e.message : "Could not resolve the item."),
   });
 
+  const ask = useMutation({
+    mutationFn: (vars: { g: SuspenseGroup; question: string }) =>
+      askSuspenseOwner(schema, {
+        merchant: vars.g.merchant || undefined,
+        category: vars.g.category || undefined,
+        question: vars.question || undefined,
+      }),
+    onSuccess: () => {
+      toast.success("Asked the owner — they’ll see it on their dashboard.");
+      qc.invalidateQueries({ queryKey: ["ea", "suspense", schema] });
+    },
+    onError: (e) =>
+      toast.error(e instanceof ApiError ? e.message : "Could not send the question."),
+  });
+
   const data    = queueQ.data;
-  const groups  = data?.groups ?? [];
+  const groups  = useMemo(() => data?.groups ?? [], [data]);
   const buckets = data?.resolve_buckets ?? ["EXPENSE", "DRAW", "LOAN", "CC_PAYMENT"];
+
+  // Pre-select the bucket the owner's answer suggests, so the EA just confirms.
+  useEffect(() => {
+    if (!groups.length) return;
+    setPicks((prev) => {
+      const next = { ...prev };
+      for (const g of groups) {
+        const k = keyOf(g);
+        const sug = g.clarification?.suggested_bucket;
+        if (sug && !next[k]) next[k] = sug;
+      }
+      return next;
+    });
+  }, [groups]);
 
   return (
     <Card>
@@ -101,13 +130,48 @@ export default function EASuspenseReviewCard({ schema }: { schema: string }) {
           const pending = resolve.isPending && resolve.variables === g;
           return (
             <div key={k} className="rounded-xl border border-border p-3 space-y-2">
-              <div className="min-w-0">
-                <div className="font-medium text-sm truncate">{g.merchant || "(no merchant)"}</div>
-                <div className="text-xs text-muted-foreground">
-                  {money(g.amount)} · {g.count} txn{g.count === 1 ? "" : "s"} · Plaid:{" "}
-                  <span className="text-foreground">{g.category || "—"}</span>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-medium text-sm truncate">{g.merchant || "(no merchant)"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {money(g.amount)} · {g.count} txn{g.count === 1 ? "" : "s"} · Plaid:{" "}
+                    <span className="text-foreground">{g.category || "—"}</span>
+                  </div>
                 </div>
+                {/* Owner-knowledge loop: ask, or show what the owner said. */}
+                {g.clarification?.owner_answer || g.clarification?.suggested_bucket ? null
+                  : g.clarification?.status === "asked" ? (
+                    <span className="shrink-0 text-[11px] text-amber-600 inline-flex items-center gap-1">
+                      <Loader2 className="h-3 w-3" /> Asked owner
+                    </span>
+                  ) : (
+                    <Button
+                      type="button" size="sm" variant="outline"
+                      className="shrink-0 h-7 text-xs gap-1"
+                      disabled={ask.isPending && ask.variables?.g === g}
+                      onClick={() => {
+                        const q = window.prompt(
+                          `Ask the owner about "${g.merchant || g.category}":`,
+                          "What was this payment for?",
+                        );
+                        if (q !== null) ask.mutate({ g, question: q });
+                      }}
+                    >
+                      <MessageCircleQuestion className="h-3.5 w-3.5" /> Ask owner
+                    </Button>
+                  )}
               </div>
+              {g.clarification?.owner_answer && (
+                <p className="text-xs rounded-md bg-muted/50 px-2 py-1.5">
+                  <span className="text-muted-foreground">Owner said: </span>
+                  <span className="text-foreground">{g.clarification.owner_answer}</span>
+                  {g.clarification.suggested_bucket && (
+                    <span className="text-muted-foreground">
+                      {" "}→ suggests {BUCKET_LABEL[g.clarification.suggested_bucket] ?? g.clarification.suggested_bucket}
+                    </span>
+                  )}
+                </p>
+              )}
               <div className="flex items-center gap-2">
                 <select
                   value={picked}
