@@ -193,7 +193,7 @@ function PLSubTab({ pl, schema, period, onRefresh }: {
         <div className="bg-primary/90 px-3 py-1.5 text-primary-foreground font-semibold uppercase tracking-wide text-[11px]">
           {title}
         </div>
-        <table className="w-full border-collapse">
+        <div className="overflow-x-auto"><table className="w-full border-collapse">
           <tbody>
             {rows.map((row) => (
               <tr key={row.key} className={cn(
@@ -221,7 +221,7 @@ function PLSubTab({ pl, schema, period, onRefresh }: {
               <td />
             </tr>
           </tfoot>
-        </table>
+        </table></div>
       </div>
     );
   }
@@ -229,7 +229,7 @@ function PLSubTab({ pl, schema, period, onRefresh }: {
   return (
     <div className="flex flex-col gap-3">
       {/* Summary strip */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {([
           { label: "Gross Revenue", val: pl.revenue_gross },
           { label: "Gross Profit",  val: pl.gross_profit  },
@@ -261,7 +261,7 @@ function PLSubTab({ pl, schema, period, onRefresh }: {
         <div className="bg-primary px-3 py-1.5 text-primary-foreground font-semibold uppercase tracking-wide text-[11px]">
           Revenue
         </div>
-        <table className="w-full border-collapse">
+        <div className="overflow-x-auto"><table className="w-full border-collapse">
           <tbody>
             {pl.revenue_lines.map((row) => (
               <tr key={row.key} className={cn(
@@ -314,7 +314,7 @@ function PLSubTab({ pl, schema, period, onRefresh }: {
               <td />
             </tr>
           </tfoot>
-        </table>
+        </table></div>
       </div>
 
       {/* COGS */}
@@ -366,7 +366,7 @@ function BSSection({ title, items, total, editing, draft, onBegin, onDraft, onCo
         {title}
       </div>
       {items.length > 0 ? (
-        <table className="w-full border-collapse">
+        <div className="overflow-x-auto"><table className="w-full border-collapse">
           <thead className="bg-secondary/60">
             <tr>
               <th className="text-left px-2 py-1.5 font-medium text-muted-foreground">Account</th>
@@ -413,7 +413,7 @@ function BSSection({ title, items, total, editing, draft, onBegin, onDraft, onCo
               <td colSpan={2} />
             </tr>
           </tfoot>
-        </table>
+        </table></div>
       ) : (
         <div className="px-3 py-2 text-muted-foreground italic">No entries.</div>
       )}
@@ -493,7 +493,7 @@ function BSSubTab({ bs, schema, period, onRefresh }: {
           Liabilities
         </div>
         {bs.liabilities.items.length > 0 ? (
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto"><table className="w-full border-collapse">
             <tbody>
               {bs.liabilities.items.map((item) => (
                 <tr key={item.id} className="border-t border-border bg-amber-50">
@@ -510,7 +510,7 @@ function BSSubTab({ bs, schema, period, onRefresh }: {
                 <td colSpan={2} />
               </tr>
             </tfoot>
-          </table>
+          </table></div>
         ) : (
           <div className="px-3 py-2 text-muted-foreground italic">No liabilities recorded.</div>
         )}

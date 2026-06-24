@@ -35,7 +35,7 @@ const BILLING_ITEM: NavItem  = { to: "/app/billing",  label: "Billing",  icon: C
 // Invoicing is central for service & construction businesses but irrelevant to
 // POS / food / retail (they take payment at the point of sale). Show the tab
 // only where it earns its place; hide it everywhere else to keep the bar lean.
-function showsInvoices(businessType: string | null | undefined): boolean {
+export function showsInvoices(businessType: string | null | undefined): boolean {
   const t = (businessType ?? "").toLowerCase();
   const noInvoice = /coffee|cafe|café|restaurant|food|bakery|bar|retail|shop|store|grocer|boutique|ecommerce|e-commerce|salon|spa/;
   if (noInvoice.test(t)) return false;
@@ -44,7 +44,7 @@ function showsInvoices(businessType: string | null | undefined): boolean {
 
 // Billing only appears once a plan is configured for the client, so existing
 // clients don't see an empty "contact us" tab until billing is actually set up.
-function buildNav(businessType: string | null | undefined, hasBilling: boolean): NavItem[] {
+export function buildNav(businessType: string | null | undefined, hasBilling: boolean): NavItem[] {
   const items = [...BASE_NAV];
   if (showsInvoices(businessType)) {
     // Insert Invoices right after Reports so AR sits next to financials.
@@ -197,7 +197,7 @@ export default function ClientLayout() {
       <nav className="fixed bottom-0 left-0 right-0 z-20" style={{ background: "#ffffff", borderTop: "1px solid #E2E8F0" }}>
         <ul className="flex">
           {navItems.map(({ to, label, icon: Icon, end, badge }) => (
-            <li key={to} className="flex-1">
+            <li key={to} className="flex-1 min-w-0">
               <NavLink
                 to={to}
                 end={end}
@@ -220,7 +220,7 @@ export default function ClientLayout() {
                         </span>
                       )}
                     </span>
-                    {label}
+                    <span className="max-w-full truncate">{label}</span>
                   </>
                 )}
               </NavLink>
