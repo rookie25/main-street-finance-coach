@@ -34,7 +34,14 @@ export interface EAProfile {
   id: string;
   email: string;
   name: string | null;
+  is_cpa?: boolean;   // licensed CPA — may attest an EA-approved month
 }
+
+export const cpaSignOff = (schema: string, month: string, sign = true) =>
+  post<{ ok: boolean; cpa_signed: boolean }>(
+    `/ea/client/${encodeURIComponent(schema)}/cpa-sign-off`,
+    { month, sign },
+  );
 
 export interface EAProfileData {
   full_name:     string | null;
@@ -471,6 +478,9 @@ export interface SuspenseGroup {
   amount:         number;
   dates:          string[];
   clarification?: SuspenseClarification;
+  // Plaid-drift suggestion: the same merchant resolves to this bucket in other
+  // months (Plaid re-tagged it into Suspense). One-click to apply a durable rule.
+  suggestion?:    { bucket: string; seen: number; sample_category: string };
 }
 
 export interface SuspenseResolution {
@@ -573,6 +583,7 @@ export interface ApplyCategorizationPayload {
   merchant_pattern?: string;
   expense_ids?:      string[];
   create_rule?:      boolean;
+  is_global?:        boolean;   // share the rule across all clients (shared pool)
 }
 
 export const applyCategorization = (schema: string, body: ApplyCategorizationPayload) =>

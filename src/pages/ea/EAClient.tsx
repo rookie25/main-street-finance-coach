@@ -16,6 +16,7 @@ import {
   getClientMonths, getClientPnl, listClients, asDownloadUrl, downloadQuickBooks,
   getPendingAdjustments, approveAdjustment, rejectAdjustment, getEAFlags,
   getVerificationFlags, resolveVerificationFlag, approveMonthViaBackend,
+  getMe, cpaSignOff,
   type PendingAdjustment, type EAFlagEnriched, type VerificationFlag,
 } from "@/lib/eaApi";
 import {
@@ -554,11 +555,24 @@ function ApprovalCard({ schema, month, qc }: SectionProps) {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not undo."),
   });
 
+  // Who am I? — a licensed CPA may attest an EA-approved month.
+  const meQ = useQuery({ queryKey: ["ea", "me"], queryFn: getMe, staleTime: 10 * 60 * 1000 });
+  const isCpa = !!meQ.data?.is_cpa;
+  const cpaSign = useMutation({
+    mutationFn: (sign: boolean) => cpaSignOff(schema, month, sign),
+    onSuccess: (_d, sign) => {
+      toast.success(sign ? "CPA attestation signed" : "CPA attestation removed");
+      qc.invalidateQueries({ queryKey: key });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not sign off."),
+  });
+
   const approved = approvalQ.data;
+  const cpaSigned = !!approved?.cpa_signed_at;
 
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 space-y-3">
         {approved ? (
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-primary">
@@ -587,6 +601,34 @@ function ApprovalCard({ schema, month, qc }: SectionProps) {
             {approve.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {monthLabel(month).split(" ")[0]} Looks Good ✅
           </Button>
+        )}
+
+        {/* CPA attestation — second stage. Only surfaces when a CPA is actually in
+            the loop (already attested, or the current user is a CPA). EA-only
+            engagements never see it, so there's no misleading "pending CPA" noise. */}
+        {approved && (cpaSigned || isCpa) && (
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+            {cpaSigned ? (
+              <>
+                <div className="flex items-center gap-2 text-green-600">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="text-sm font-medium">CPA-attested</span>
+                </div>
+                {isCpa && (
+                  <Button variant="ghost" size="sm" disabled={cpaSign.isPending}
+                    onClick={() => cpaSign.mutate(false)}>
+                    {cpaSign.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button variant="outline" size="sm" className="w-full" disabled={cpaSign.isPending}
+                onClick={() => cpaSign.mutate(true)}>
+                {cpaSign.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                Sign off as CPA
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

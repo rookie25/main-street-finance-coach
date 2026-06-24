@@ -86,7 +86,8 @@ export default function EASuspenseReviewCard({ schema }: { schema: string }) {
       const next = { ...prev };
       for (const g of groups) {
         const k = keyOf(g);
-        const sug = g.clarification?.suggested_bucket;
+        // Owner's answer wins; otherwise fall back to the Plaid-drift suggestion.
+        const sug = g.clarification?.suggested_bucket ?? g.suggestion?.bucket;
         if (sug && !next[k]) next[k] = sug;
       }
       return next;
@@ -171,6 +172,18 @@ export default function EASuspenseReviewCard({ schema }: { schema: string }) {
                       {" "}→ suggests {BUCKET_LABEL[g.clarification.suggested_bucket] ?? g.clarification.suggested_bucket}
                     </span>
                   )}
+                </p>
+              )}
+              {/* Plaid-drift suggestion — same payee resolves to this bucket elsewhere */}
+              {!g.clarification?.owner_answer && g.suggestion && (
+                <p className="text-xs rounded-md bg-blue-50 text-blue-900 px-2 py-1.5">
+                  Likely{" "}
+                  <span className="font-medium">
+                    {BUCKET_LABEL[g.suggestion.bucket] ?? g.suggestion.bucket}
+                  </span>{" "}
+                  — Plaid mislabeled it here, but the same payee was classified this way{" "}
+                  {g.suggestion.seen}× in other months. Pre-selected below; confirm to save a
+                  permanent rule.
                 </p>
               )}
               <div className="flex items-center gap-2">

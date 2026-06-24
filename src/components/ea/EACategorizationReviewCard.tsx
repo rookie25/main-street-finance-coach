@@ -24,6 +24,7 @@ export default function EACategorizationReviewCard({
   const qc = useQueryClient();
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [globals, setGlobals] = useState<Record<string, boolean>>({});
 
   const reviewQ = useQuery({
     queryKey: ["ea", "cat-review", schema, month],
@@ -56,6 +57,7 @@ export default function EACategorizationReviewCard({
         raw_merchant: g.raw_merchant ?? undefined,
         expense_ids:  g.raw_merchant ? undefined : g.expense_ids,
         create_rule:  true,
+        is_global:    globals[keyOf(g)] || false,
       }),
     onSuccess: (res) => {
       toast.success(
@@ -158,6 +160,16 @@ export default function EACategorizationReviewCard({
                   AI: {reasons[k]} — review before applying.
                 </p>
               )}
+              {/* Share across all clients — for vendors that map the same everywhere */}
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={globals[k] || false}
+                  onChange={(e) => setGlobals((p) => ({ ...p, [k]: e.target.checked }))}
+                  className="h-3 w-3 rounded border-input"
+                />
+                Apply to all clients (e.g. Costco, Amazon — not a client-specific vendor)
+              </label>
             </div>
           );
         })}

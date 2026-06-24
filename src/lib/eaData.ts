@@ -24,6 +24,9 @@ export interface EAApproval {
   approved_by: string;
   approved_at: string;
   notes: string | null;
+  cpa_signed_by?: string | null;
+  cpa_signed_at?: string | null;
+  cpa_review_notes?: string | null;
 }
 
 export interface EAOverride {
