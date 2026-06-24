@@ -121,7 +121,7 @@ export default function EAClient() {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-6">
           <ReportViewer schema={schema} month={month} />
-          <Tabs defaultValue="close">
+          <Tabs defaultValue="close" className="min-w-0">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="close">Close</TabsTrigger>
               <TabsTrigger value="comms">Client</TabsTrigger>
@@ -204,7 +204,7 @@ function ReportViewer({ schema, month }: { schema: string; month: string }) {
   const pnlDownload = asDownloadUrl(links.pnl_pdf_url, `${schema}_${month}_pl.pdf`);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden min-w-0">
       <Tabs defaultValue="pnl" className="w-full">
         <div className="flex items-center justify-between gap-3 p-3 border-b border-border">
           <TabsList>

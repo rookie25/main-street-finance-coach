@@ -93,7 +93,7 @@ const PROMPTS: Record<string, { starters: string[]; examples: string[] }> = {
   },
 };
 
-function verticalFor(businessType?: string | null): keyof typeof PROMPTS {
+export function verticalFor(businessType?: string | null): keyof typeof PROMPTS {
   const t = (businessType || "").toLowerCase();
   if (/coffee|cafe|caf|bakery|restaurant|bar|food|grill|kitchen|brew|deli|pizz/.test(t)) return "food";
   if (/construct|contractor|build|trades|plumb|electric|hvac|roof|concrete|landscap/.test(t)) return "construction";
@@ -385,7 +385,7 @@ export default function AppChat() {
               )}
               <div
                 className={cn(
-                  "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+                  "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words",
                   m.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "bg-card border border-border text-foreground rounded-bl-sm",

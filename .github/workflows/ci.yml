@@ -21,6 +21,24 @@ jobs:
       # that crashes a page at runtime but passes tsc + vite build).
       - run: npm run lint:hooks
 
+  test:
+    name: Unit tests & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Vitest: vertical-gating logic + component render smoke tests. Catches
+      # render-time crashes (bad hooks, malformed JSX) that tsc + build miss.
+      - name: Unit tests
+        run: npm test
+      # A green production build is a hard merge gate (prebuild runs lint:hooks).
+      - name: Production build
+        run: npm run build
+
   security:
     name: Security & typecheck
     runs-on: ubuntu-latest
