@@ -18,7 +18,7 @@ export default function About() {
           <Reveal>
             <div className="text-xs uppercase tracking-[0.2em] text-accent mb-5">About</div>
             <h1 className="font-display text-4xl md:text-6xl font-semibold leading-[1.1] text-balance">
-              Built by someone who believes Main Street deserves better.
+              Built by someone who believes every business deserves better.
             </h1>
           </Reveal>
         </div>
@@ -28,7 +28,7 @@ export default function About() {
         <div className="container-prose max-w-3xl">
           <Reveal>
             <p className="text-lg md:text-xl leading-relaxed text-foreground/85">
-              Desired Labs was founded to solve a problem we saw everywhere — small businesses paying hundreds of dollars a month for quarterly reports they couldn't act on, missing filings they didn't know about, and making decisions without real numbers.
+              Desired Labs was founded to solve a problem we saw everywhere — businesses paying hundreds of dollars a month for quarterly reports they couldn't act on, missing filings they didn't know about, and making decisions without real numbers.
             </p>
             <p className="text-lg md:text-xl leading-relaxed text-foreground/85 mt-6">
               We built the system we wished existed.
@@ -45,7 +45,7 @@ export default function About() {
               <div className="relative">
                 <div className="text-xs uppercase tracking-[0.2em] text-accent mb-5">Our mission</div>
                 <p className="font-display text-2xl md:text-4xl leading-tight text-balance italic">
-                  "Every Main Street business deserves the financial clarity that enterprise companies take for granted."
+                  "Every business deserves the financial clarity that enterprise companies take for granted."
                 </p>
               </div>
             </div>

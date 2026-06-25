@@ -131,7 +131,7 @@ export default function Contact() {
                   <Input name="name" placeholder="Jane Doe" maxLength={100} required disabled={submitting} />
                 </Field>
                 <Field label="Business name" error={errors.business}>
-                  <Input name="business" placeholder="Main Street Coffee Co." maxLength={120} required disabled={submitting} />
+                  <Input name="business" placeholder="Acme Co." maxLength={120} required disabled={submitting} />
                 </Field>
                 <Field label="Business type" error={errors.type}>
                   <Select value={type} onValueChange={setType} disabled={submitting}>

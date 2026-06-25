@@ -6,7 +6,7 @@ import SectionHeader from "@/components/SectionHeader";
 import DashboardMockup from "@/components/DashboardMockup";
 
 const problems = [
-  { icon: Eye, title: "Flying blind every month", body: "Most small business owners see their numbers quarterly. By then it's too late to act." },
+  { icon: Eye, title: "Flying blind every month", body: "Most business owners see their numbers quarterly. By then it's too late to act." },
   { icon: Wallet, title: "Paying too much for too little", body: "Bookkeepers, payroll services, QuickBooks — it adds up to $800–1,000/month for basic reports." },
   { icon: AlertTriangle, title: "Tax surprises that hurt", body: "Missed filings, wrong categorizations, deductions you never knew existed." },
 ];
@@ -36,7 +36,7 @@ export default function Home() {
           <Reveal>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-foreground/10 backdrop-blur border border-primary-foreground/15 text-xs font-medium tracking-wide mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              The AI CFO for Main Street
+              The AI CFO for your business
             </div>
             <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold leading-[1.05] text-balance">
               Your business deserves a CFO. <span className="text-accent italic">Now it can have one.</span>
@@ -70,7 +70,7 @@ export default function Home() {
         <div className="container-prose">
           <SectionHeader
             eyebrow="The reality"
-            title="What's quietly costing Main Street businesses"
+            title="What's quietly costing businesses"
           />
           <div className="grid md:grid-cols-3 gap-6">
             {problems.map((p, i) => (

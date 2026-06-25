@@ -42,7 +42,7 @@ export default function StepBusiness({
         <Input
           value={value.business_name}
           onChange={(e) => set("business_name", e.target.value)}
-          placeholder="Main Street Coffee Co."
+          placeholder="Acme Co."
           maxLength={120}
           required
         />
