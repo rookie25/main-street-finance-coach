@@ -7,7 +7,7 @@ export default function SiteFooter() {
         <div className="md:col-span-2">
           <div className="font-display text-2xl font-semibold mb-2">Desired Labs</div>
           <p className="text-primary-foreground/70 max-w-sm">
-            The AI CFO for Main Street. Daily clarity, automated bookkeeping, and zero tax surprises.
+            The AI CFO for your business. Daily clarity, automated bookkeeping, and zero tax surprises.
           </p>
         </div>
         <div>
@@ -29,7 +29,7 @@ export default function SiteFooter() {
       </div>
       <div className="border-t border-primary-foreground/10">
         <div className="container-prose py-6 flex flex-col md:flex-row gap-3 justify-between text-xs text-primary-foreground/60">
-          <p>© 2026 Desired Labs. AI-powered financial operations for Main Street businesses.</p>
+          <p>© 2026 Desired Labs. AI-powered financial operations for businesses.</p>
           <p>Not a CPA firm. We do not prepare or sign tax returns.</p>
         </div>
       </div>
