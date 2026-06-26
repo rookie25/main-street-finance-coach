@@ -33,6 +33,7 @@ const About       = lazy(() => import("./pages/About"));
 const Contact     = lazy(() => import("./pages/Contact"));
 const Privacy     = lazy(() => import("./pages/Privacy"));
 const Onboard     = lazy(() => import("./pages/Onboard"));
+const Demo        = lazy(() => import("./pages/Demo"));
 const OnboardOAuthReturn = lazy(() => import("./pages/OnboardOAuthReturn"));
 const NotFound    = lazy(() => import("./pages/NotFound"));
 
@@ -124,6 +125,9 @@ const App = () => (
 
             {/* Password-reset landing — outside all auth gates, needs no session. */}
             <Route path="/auth/reset-password" element={<ResetPassword />} />
+
+            {/* Demo / free-assessment landing — the business-card QR points here. */}
+            <Route path="/demo" element={<Demo />} />
 
             {/* EA Portal — auth context wraps login + protected routes. */}
             <Route element={<EAAuthGate />}>
