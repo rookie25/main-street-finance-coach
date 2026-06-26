@@ -3,9 +3,10 @@ import { useEffect } from "react";
 // Demo / free-assessment landing page. The business-card QR points here.
 // Shows the demo video, then a "Book your free assessment" call to action.
 //
-// 🔧 TO WIRE BOOKING: replace BOOKING_URL with your Cal.com / Calendly link once
-// set up. Until then it opens an email so the CTA still works.
-const BOOKING_URL = "mailto:vishal@desiredlabs.ai?subject=Free%20Financial%20Assessment";
+// Points to the existing free-assessment form (/contact), which captures the lead
+// and emails the team. Swap to a Cal.com/Calendly link later if you want
+// self-service time-slot booking.
+const BOOKING_URL = "/contact";
 const VIDEO_URL =
   "https://afygsdlzrfgsvbhkvtxc.supabase.co/storage/v1/object/public/public-media/demo/desired_labs_demo.mp4?v=2";
 
