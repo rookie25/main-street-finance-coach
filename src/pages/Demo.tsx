@@ -7,7 +7,7 @@ import { useEffect } from "react";
 // set up. Until then it opens an email so the CTA still works.
 const BOOKING_URL = "mailto:vishal@desiredlabs.ai?subject=Free%20Financial%20Assessment";
 const VIDEO_URL =
-  "https://afygsdlzrfgsvbhkvtxc.supabase.co/storage/v1/object/public/public-media/demo/desired_labs_demo.mp4";
+  "https://afygsdlzrfgsvbhkvtxc.supabase.co/storage/v1/object/public/public-media/demo/desired_labs_demo.mp4?v=2";
 
 export default function Demo() {
   useEffect(() => {
