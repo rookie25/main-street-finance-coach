@@ -377,6 +377,11 @@ export const getCashForecast = (weeks = 13) =>
   get<CashForecast>(`/client/cash-forecast?weeks=${weeks}`);
 
 // Phase 4 — forward P&L + cash forecast (read-only, structured by cost layer).
+export interface DebtLine {
+  label:        string;   // e.g. "Term loan", "Equipment loan", "Sales holdback"
+  payment:      number;   // this month's total payment (interest + principal / holdback)
+  balance_end:  number;   // remaining balance at month end
+}
 export interface PnlForecastRow {
   period:                       string;
   revenue:                      number;
@@ -385,11 +390,11 @@ export interface PnlForecastRow {
   loan_interest:                number;
   net_income:                   number;
   loan_principal:               number;
-  square_capital_holdback:      number;
   owner_draws:                  number;
   projected_cash:               number;
-  sjc_balance_end:              number;
-  square_capital_balance_end:   number;
+  // Per-client debt (replaces the pilot-specific sjc_/square_capital_ fields);
+  // each client sees only the debt they actually have.
+  debt_lines:                   DebtLine[];
 }
 export interface PnlForecast {
   available:        boolean;
