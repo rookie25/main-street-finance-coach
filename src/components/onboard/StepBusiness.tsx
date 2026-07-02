@@ -136,6 +136,16 @@ export default function StepBusiness({
               <SelectItem value="mechanic">Mechanic</SelectItem>
             </SelectGroup>
             <SelectGroup>
+              <SelectLabel>Construction &amp; Trades</SelectLabel>
+              <SelectItem value="general_contractor">General Contractor</SelectItem>
+              <SelectItem value="plumbing">Plumbing</SelectItem>
+              <SelectItem value="electrical">Electrical</SelectItem>
+              <SelectItem value="hvac">HVAC</SelectItem>
+              <SelectItem value="roofing">Roofing</SelectItem>
+              <SelectItem value="landscaping">Landscaping</SelectItem>
+              <SelectItem value="concrete">Concrete / Masonry</SelectItem>
+            </SelectGroup>
+            <SelectGroup>
               <SelectLabel>Print</SelectLabel>
               <SelectItem value="print_shop">Print Shop</SelectItem>
             </SelectGroup>
