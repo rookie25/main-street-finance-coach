@@ -30,11 +30,13 @@ export default function RequireAuth() {
     }
 
     let cancelled = false;
-    supabase
-      .from("ea_users")
-      .select("user_id")
-      .eq("user_id", session.user.id)
-      .maybeSingle()
+    Promise.resolve(
+      supabase
+        .from("ea_users")
+        .select("user_id")
+        .eq("user_id", session.user.id)
+        .maybeSingle()
+    )
       .then(async ({ data, error }) => {
         if (cancelled) return;
         if (error) {
