@@ -258,7 +258,7 @@ export default function AppChat() {
     try {
       // API payload: strip system separators and prepend month context to the last user message
       const apiMessages = nextMessages
-        .filter(m => m.role !== "system")
+        .filter((m): m is Message & { role: "user" | "assistant" } => m.role !== "system")
         .map((m, i, arr) =>
           m.role === "user" && i === arr.length - 1 && selectedMonth
             ? { ...m, content: `[Context: User is asking about ${fmtMonth(selectedMonth)}] ${m.content}` }

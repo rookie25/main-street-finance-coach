@@ -188,7 +188,8 @@ export default function AppExpenses() {
   const editMutation = useMutation<
     Awaited<ReturnType<typeof patchExpense>>,
     Error,
-    EditVars
+    EditVars,
+    { previous: unknown }
   >({
     mutationFn: (vars) => patchExpense(vars.id, {
       vendor:   vars.vendor,
@@ -198,7 +199,7 @@ export default function AppExpenses() {
     }),
 
     onMutate: async (vars) => {
-      const queryKey = expensesKey as const;
+      const queryKey = expensesKey;
       await qc.cancelQueries({ queryKey });
       const previous = qc.getQueryData(queryKey);
 

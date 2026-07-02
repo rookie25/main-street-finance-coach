@@ -34,6 +34,9 @@ export const CATALOG: Record<string, Integration> = {
   tekmetric:   { id: "tekmetric",   name: "Tekmetric",    method: "api_key", initials: "TK", bgColor: "bg-cyan-700",    hint: "Tekmetric → Settings → Integrations" },
   printsmith:  { id: "printsmith",  name: "PrintSmith",   method: "csv",     initials: "PS", bgColor: "bg-amber-600",   hint: "File → Export → CSV, then upload here" },
   printavo:    { id: "printavo",    name: "Printavo",     method: "api_key", initials: "PA", bgColor: "bg-blue-500",    hint: "Printavo → Account Settings → API key" },
+  jobber:      { id: "jobber",      name: "Jobber",       method: "api_key", initials: "JB", bgColor: "bg-green-700",   hint: "Jobber → Settings → API access → copy key" },
+  servicetitan:{ id: "servicetitan",name: "ServiceTitan", method: "api_key", initials: "ST", bgColor: "bg-blue-900",    hint: "ServiceTitan → Settings → Integrations → API" },
+  housecall:   { id: "housecall",   name: "Housecall Pro",method: "api_key", initials: "HC", bgColor: "bg-sky-600",     hint: "Housecall Pro → Settings → API keys" },
   doordash:    { id: "doordash",    name: "DoorDash",     method: "csv",     initials: "DD", bgColor: "bg-red-500",     hint: "Merchant Portal → Financials → Statements → Export CSV" },
   plaid:       { id: "plaid",       name: "Bank (Plaid)", method: "oauth",   initials: "PL", bgColor: "bg-blue-600",    hint: "Securely link your business bank account" },
   gmail:       { id: "gmail",       name: "Gmail",        method: "oauth",   initials: "GM", bgColor: "bg-red-500",     hint: "Grant read-only access for invoice & receipt capture" },
@@ -78,6 +81,14 @@ const BUSINESS_SPECIFIC: Record<string, string[]> = {
   mechanic:       ["mitchell1", "shopware", "tekmetric"],
   // Print
   print_shop:     ["printsmith", "printavo"],
+  // Construction & Trades — field-service management tools (job/dispatch/invoicing).
+  general_contractor: ["jobber", "servicetitan", "housecall"],
+  plumbing:           ["servicetitan", "housecall", "jobber"],
+  electrical:         ["servicetitan", "housecall", "jobber"],
+  hvac:               ["servicetitan", "housecall", "jobber"],
+  roofing:            ["jobber", "housecall", "servicetitan"],
+  landscaping:        ["jobber", "housecall", "servicetitan"],
+  concrete:           ["jobber", "servicetitan", "housecall"],
   // Generic
   service:        [],
   other:          [],

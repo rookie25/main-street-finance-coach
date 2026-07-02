@@ -435,7 +435,7 @@ function BSSubTab({ bs, schema, period, onRefresh }: {
   }
 
   async function commitEdit(item: BSItem, field: string) {
-    const origVal = String(field === "amount" ? item.amount : (item as Record<string, unknown>)[field] ?? "");
+    const origVal = String(field === "amount" ? item.amount : (item as unknown as Record<string, unknown>)[field] ?? "");
     if (draft === origVal) { setEditing(null); return; }
     setSaving(true);
     try {

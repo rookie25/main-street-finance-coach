@@ -77,3 +77,22 @@ describe("verticalFor (AI prompt set)", () => {
     }
   });
 });
+
+// Multi-vertical: the construction trades now selectable at onboarding must route
+// correctly through nav + AI. These are the exact dropdown values in StepBusiness.tsx.
+export const CONSTRUCTION_TRADES = [
+  "general_contractor", "plumbing", "electrical", "hvac", "roofing", "landscaping", "concrete",
+];
+
+describe("construction trades (multi-vertical)", () => {
+  it("every trade shows the Invoices tab (they bill progress, not POS)", () => {
+    for (const t of CONSTRUCTION_TRADES) {
+      expect(showsInvoices(t), t).toBe(true);
+    }
+  });
+  it("every trade maps to the construction AI prompt set", () => {
+    for (const t of CONSTRUCTION_TRADES) {
+      expect(verticalFor(t), t).toBe("construction");
+    }
+  });
+});
